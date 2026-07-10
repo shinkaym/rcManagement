@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import {
   Cancel01Icon,
   GridViewIcon,
@@ -11,16 +12,16 @@ import {
   UserAccountIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
-import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { AppTheme } from '@/shared/theme';
 import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
-import { AppTheme } from '@/shared/theme';
+import { AppIcon } from '@/shared/ui/icon';
 
 export type DrawerItemKey =
   | 'home'
@@ -53,10 +54,39 @@ type AppDrawerContentProps = {
   onNavigate: (itemKey: DrawerItemKey) => void;
 };
 
-export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDrawerContentProps) {
+type DrawerMenuItemProps = {
+  icon: typeof Home01Icon;
+  isSelected: boolean;
+  itemKey: DrawerItemKey;
+  label: string;
+  onNavigate: (itemKey: DrawerItemKey) => void;
+  styles: ReturnType<typeof createStyles>;
+};
+
+const DrawerMenuItem = memo(function DrawerMenuItem({
+  icon,
+  isSelected,
+  itemKey,
+  label,
+  onNavigate,
+  styles,
+}: DrawerMenuItemProps) {
+  return (
+    <Pressable onPress={() => onNavigate(itemKey)} style={styles.itemPressable}>
+      {({ pressed }) => (
+        <View style={[styles.item, isSelected ? styles.itemSelected : null, pressed ? styles.itemPressed : null]}>
+          <AppIcon color={staticColors.white} icon={icon} size={18} strokeWidth={2.4} />
+          <Text style={styles.itemLabel}>{label}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+});
+
+export const AppDrawerContent = memo(function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDrawerContentProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets.top, insets.bottom);
+  const styles = useMemo(() => createStyles(theme, insets.top, insets.bottom), [insets.bottom, insets.top, theme]);
 
   return (
     <View style={styles.container}>
@@ -80,23 +110,22 @@ export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDraw
         contentContainerStyle={styles.listContent}
       >
         {drawerItems.map((item) => {
-          const isSelected = item.key === activeItemKey;
-
           return (
-            <Pressable key={item.key} onPress={() => onNavigate(item.key)} style={styles.itemPressable}>
-              {({ pressed }) => (
-                <View style={[styles.item, isSelected ? styles.itemSelected : null, pressed ? styles.itemPressed : null]}>
-                  <AppIcon color={staticColors.white} icon={item.icon} size={18} strokeWidth={2.4} />
-                  <Text style={styles.itemLabel}>{item.label}</Text>
-                </View>
-              )}
-            </Pressable>
+            <DrawerMenuItem
+              key={item.key}
+              icon={item.icon}
+              isSelected={item.key === activeItemKey}
+              itemKey={item.key}
+              label={item.label}
+              onNavigate={onNavigate}
+              styles={styles}
+            />
           );
         })}
       </ScrollView>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({

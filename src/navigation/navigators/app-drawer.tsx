@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NavigationState, ParamListBase, PartialState, RouteProp } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -65,6 +65,7 @@ function AppShellFrame({ children, navigation, route }: AppShellFrameProps) {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
   const styles = useMemo(() => createStyles(theme), [theme]);
   const activeLeafRouteName = getActiveShellRouteName(route);
@@ -111,19 +112,26 @@ function AppShellFrame({ children, navigation, route }: AppShellFrameProps) {
     [progress],
   );
 
-  function closeDrawer() {
+  const closeDrawer = useCallback(() => {
     setIsDrawerOpen(false);
-  }
+  }, []);
 
-  function openDrawer() {
+  const openDrawer = useCallback(() => {
+    setHasOpenedDrawer(true);
     setIsDrawerOpen(true);
-  }
+  }, []);
 
-  function toggleDrawer() {
-    setIsDrawerOpen((value) => !value);
-  }
+  const toggleDrawer = useCallback(() => {
+    setIsDrawerOpen((value) => {
+      if (!value) {
+        setHasOpenedDrawer(true);
+      }
 
-  function navigateTo(itemKey: DrawerItemKey) {
+      return !value;
+    });
+  }, []);
+
+  const navigateTo = useCallback((itemKey: DrawerItemKey) => {
     switch (itemKey) {
       case 'home':
         navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
@@ -186,7 +194,7 @@ function AppShellFrame({ children, navigation, route }: AppShellFrameProps) {
     }
 
     closeDrawer();
-  }
+  }, [closeDrawer, navigation]);
 
   const drawerContextValue = useMemo(
     () => ({
@@ -195,15 +203,17 @@ function AppShellFrame({ children, navigation, route }: AppShellFrameProps) {
       openDrawer,
       toggleDrawer,
     }),
-    [isDrawerOpen],
+    [closeDrawer, isDrawerOpen, openDrawer, toggleDrawer],
   );
 
   return (
     <ShellDrawerContext.Provider value={drawerContextValue}>
       <View style={styles.shell}>
-        <View style={[styles.drawerPanel, { width: drawerPanelWidth }]}>
-          <AppDrawerContent activeItemKey={activeItemKey} onClose={closeDrawer} onNavigate={navigateTo} />
-        </View>
+        {hasOpenedDrawer ? (
+          <View style={[styles.drawerPanel, { width: drawerPanelWidth }]}>
+            <AppDrawerContent activeItemKey={activeItemKey} onClose={closeDrawer} onNavigate={navigateTo} />
+          </View>
+        ) : null}
 
         <Animated.View
           pointerEvents={isDrawerOpen ? 'none' : 'auto'}

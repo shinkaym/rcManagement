@@ -1,16 +1,18 @@
 import { Home01Icon, ReceiptTextIcon, ScanImageIcon, Settings02Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import { navigationMetrics } from '../navigation-metrics';
 import { ROOT_ROUTES, TAB_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const tabVisualConfig = {
   [TAB_ROUTES.HOME_STACK]: { icon: Home01Icon, label: 'Home' },
@@ -75,7 +77,7 @@ export function AppTabBar({ navigation, state }: BottomTabBarProps) {
           {({ pressed }) => (
             <View style={styles.centerActionWrapper}>
               <View style={[styles.centerActionButton, pressed ? styles.itemPressed : null]}>
-                <HugeiconsIcon color='#FFFFFF' icon={ScanImageIcon} size={30} strokeWidth={2.1} />
+                <AppIcon color={staticColors.white} icon={ScanImageIcon} size={30} strokeWidth={2.1} />
               </View>
               <Text style={styles.centerActionLabel}>Scan</Text>
             </View>
@@ -102,7 +104,7 @@ function TabBarItem({ icon, isFocused, label, onPress }: TabBarItemProps) {
     <Pressable onPress={onPress} style={styles.itemPressable}>
       {({ pressed }) => (
         <View style={[styles.itemContent, pressed ? styles.itemPressed : null]}>
-          <HugeiconsIcon color={color} icon={icon} size={24} strokeWidth={1.9} />
+          <AppIcon color={color} icon={icon} size={24} strokeWidth={1.9} />
           <Text style={[styles.itemLabel, { color }, isFocused ? styles.itemLabelActive : null]}>{label}</Text>
         </View>
       )}
@@ -110,10 +112,10 @@ function TabBarItem({ icon, isFocused, label, onPress }: TabBarItemProps) {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number) {
+function createStyles(theme: AppTheme, bottomInset: number) {
   return StyleSheet.create({
     wrapper: {
-      backgroundColor: 'transparent',
+      backgroundColor: staticColors.transparent,
     },
     container: {
       height: navigationMetrics.bottomNavHeight + bottomInset,
@@ -121,7 +123,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surface,
-      boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.08)',
+      boxShadow: theme.shadow.bottomBar,
     },
     navSlot: {
       flex: 1,
@@ -169,7 +171,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       justifyContent: 'center',
       borderRadius: radius.pill,
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.18)',
+      boxShadow: theme.shadow.fab,
     },
     centerActionLabel: {
       ...typography.labelLarge,

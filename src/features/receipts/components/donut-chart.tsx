@@ -8,6 +8,7 @@ import { describeDonutArc } from '@/shared/utils/chart';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 
 type DonutChartProps = {
@@ -116,7 +117,7 @@ function LegendPlaceholderRow() {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',

@@ -30,3 +30,10 @@ export const palette = {
   chartCyan: '#49BCD9',
   chartGrid: '#D7DEE5',
 } as const;
+
+export const staticColors = {
+  white: '#FFFFFF',
+  black: '#000000',
+  grey: '#6B7280',
+  transparent: 'transparent',
+} as const;

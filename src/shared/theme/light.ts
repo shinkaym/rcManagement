@@ -19,6 +19,7 @@ export const lightTheme = {
     textTertiarySoft: palette.textTertiarySoft,
     textHint: palette.textHint,
     chartGrid: palette.chartGrid,
+    success: palette.success,
     danger: palette.danger,
   },
 } as const;

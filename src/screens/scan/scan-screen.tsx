@@ -6,7 +6,7 @@ import {
   PlusSignIcon,
   RotateCcwSquareIcon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { launchImageLibrary } from 'react-native-image-picker';
 import PhotoManipulator, { MimeType, RotationMode } from 'react-native-photo-manipulator';
@@ -29,10 +29,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { ScanAppBar } from '@/shared/shell/components/scan-app-bar';
+import { ScanHeader } from '@/navigation/components/scan-header';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 const minZoomLevel = 1;
 const maxZoomLevel = 3;
@@ -174,6 +176,15 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
 
   function handleBackToHome() {
     onBackToHome?.();
+  }
+
+  function handleHeaderBackPress() {
+    if (mode === 'capture') {
+      handleBackToHome();
+      return;
+    }
+
+    handleClosePreview();
   }
 
   function handleClosePreview() {
@@ -518,15 +529,14 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
 
         <View style={styles.content}>
           {mode !== 'crop' ? (
-            <ScanAppBar
+            <ScanHeader
               isFlashEnabled={isFlashEnabled}
               isWorking={isWorking}
               mode={mode}
-              onBackToHome={handleBackToHome}
-              onClosePreview={handleClosePreview}
+              onBackPress={handleHeaderBackPress}
               onCrop={handleEnterCropMode}
+              onEdit={handlePreviewPlaceholderAction}
               onOpenGallery={handleOpenGallery}
-              onPlaceholderEdit={handlePreviewPlaceholderAction}
               onRotate={handleRotatePreviewImage}
               onSwitchCamera={handleSwitchCamera}
               onToggleFlash={handleToggleFlash}
@@ -661,7 +671,7 @@ function CameraStatusOverlay({
 
   return (
     <View style={styles.cameraStatusOverlay}>
-      {isLoading ? <ActivityIndicator color='#FFFFFF' size='small' /> : null}
+      {isLoading ? <ActivityIndicator color={staticColors.white} size='small' /> : null}
       <Text style={styles.cameraStatusText}>{errorMessage}</Text>
       <View style={styles.cameraStatusActions}>
         {!isLoading ? <PillActionButton label='Retry' onPress={onRetry} /> : null}
@@ -827,7 +837,7 @@ function ZoomControl({ currentZoomLevel, maxZoomValue, minZoomValue, onZoomIn, o
         <Pressable onPress={onZoomOut} style={styles.zoomStepPressable}>
           {({ pressed }) => (
             <View style={[styles.zoomStepButton, pressed ? styles.controlPressed : null]}>
-              <HugeiconsIcon icon={MinusSignIcon} size={18} color='#FFFFFF' strokeWidth={2.1} />
+              <AppIcon icon={MinusSignIcon} size={18} color={staticColors.white} strokeWidth={2.1} />
             </View>
           )}
         </Pressable>
@@ -842,7 +852,7 @@ function ZoomControl({ currentZoomLevel, maxZoomValue, minZoomValue, onZoomIn, o
         <Pressable onPress={onZoomIn} style={styles.zoomStepPressable}>
           {({ pressed }) => (
             <View style={[styles.zoomStepButton, pressed ? styles.controlPressed : null]}>
-              <HugeiconsIcon icon={PlusSignIcon} size={18} color='#FFFFFF' strokeWidth={2.1} />
+              <AppIcon icon={PlusSignIcon} size={18} color={staticColors.white} strokeWidth={2.1} />
             </View>
           )}
         </Pressable>
@@ -903,7 +913,7 @@ function TextActionButton({ disabled = false, icon, label, onPress }: TextAction
             pressed ? styles.controlPressed : null,
           ]}
         >
-          <HugeiconsIcon icon={icon} size={20} color='#FFFFFF' strokeWidth={2} />
+          <AppIcon icon={icon} size={20} color={staticColors.white} strokeWidth={2} />
           <Text style={styles.textActionLabel}>{label}</Text>
         </View>
       )}
@@ -930,7 +940,7 @@ function SendActionButton({ disabled = false, onPress }: SendActionButtonProps) 
             pressed ? styles.controlPressed : null,
           ]}
         >
-          <HugeiconsIcon icon={MailSend02Icon} size={30} color='#1D8BFF' strokeWidth={1.8} />
+          <AppIcon icon={MailSend02Icon} size={30} color='#1D8BFF' strokeWidth={1.8} />
         </View>
       )}
     </Pressable>
@@ -956,7 +966,7 @@ function ToolbarIconButton({ disabled = false, icon, onPress }: ToolbarIconButto
             pressed ? styles.controlPressed : null,
           ]}
         >
-          <HugeiconsIcon icon={icon} size={28} color='#FFFFFF' strokeWidth={1.85} />
+          <AppIcon icon={icon} size={28} color={staticColors.white} strokeWidth={1.85} />
         </View>
       )}
     </Pressable>
@@ -1392,11 +1402,11 @@ function clamp(value: number, minValue: number, maxValue: number) {
   return Math.min(Math.max(value, minValue), maxValue);
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, bottomInset: number) {
+function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     screen: {
       flex: 1,
-      backgroundColor: '#000000',
+      backgroundColor: staticColors.black,
     },
     cameraPreview: {
       position: 'absolute',
@@ -1456,7 +1466,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: 'rgba(25, 28, 29, 0.74)',
-      boxShadow: `0 10px 20px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.elevated,
     },
     surfaceButtonPressable: {
       borderRadius: radius.pill,
@@ -1468,7 +1478,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       justifyContent: 'center',
       borderRadius: radius.pill,
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 4px 8px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.button,
     },
     topControlPressable: {
       borderRadius: radius.md,
@@ -1480,7 +1490,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       justifyContent: 'center',
       borderRadius: radius.md,
       borderCurve: 'continuous',
-      backgroundColor: 'transparent',
+      backgroundColor: staticColors.transparent,
     },
     topControlButtonActive: {
       backgroundColor: 'rgba(245, 124, 0, 0.18)',
@@ -1510,7 +1520,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     cameraStatusText: {
       ...typography.bodyMedium,
       maxWidth: 360,
-      color: '#FFFFFF',
+      color: staticColors.white,
       textAlign: 'center',
     },
     cameraStatusActions: {
@@ -1541,10 +1551,10 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       fontFamily: typography.titleMedium.fontFamily,
     },
     pillActionLabelFilled: {
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     pillActionLabelOutlined: {
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     bottomSection: {
       alignItems: 'center',
@@ -1578,7 +1588,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     },
     statusMessageText: {
       ...typography.bodyMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
       textAlign: 'center',
     },
     zoomControl: {
@@ -1623,7 +1633,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       right: 0,
       bottom: 0,
       left: 0,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: staticColors.white,
       borderRadius: radius.pill,
       opacity: 0.35,
     },
@@ -1683,7 +1693,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.pill,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: staticColors.white,
     },
     captureButtonPressed: {
       opacity: 0.92,
@@ -1694,7 +1704,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       transform: [{ scale: 0.965 }],
     },
     captureCoreBusy: {
-      backgroundColor: '#BEBEBE',
+      backgroundColor: staticColors.grey,
     },
     textActionPressable: {
       borderRadius: radius.pill,
@@ -1713,7 +1723,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     },
     textActionLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     sendActionPressable: {
       borderRadius: radius.pill,
@@ -1724,8 +1734,8 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.pill,
-      backgroundColor: '#FFFFFF',
-      boxShadow: '0 12px 24px rgba(0, 0, 0, 0.24)',
+      backgroundColor: staticColors.white,
+      boxShadow: theme.shadow.floating,
     },
     cropToolbarButtonPressable: {
       borderRadius: radius.pill,
@@ -1736,7 +1746,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.pill,
-      backgroundColor: 'transparent',
+      backgroundColor: staticColors.transparent,
     },
     cropDonePressable: {
       borderRadius: radius.pill,
@@ -1752,7 +1762,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     },
     cropDoneLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     cropShade: {
       position: 'absolute',
@@ -1768,7 +1778,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       bottom: 0,
       left: 0,
       borderWidth: 1.5,
-      borderColor: '#FFFFFF',
+      borderColor: staticColors.white,
     },
     cropGridVerticalLeft: {
       position: 'absolute',
@@ -1863,7 +1873,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       position: 'absolute',
       width: 30,
       height: 3,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: staticColors.white,
     },
     cropHandleHorizontalLeft: {
       left: 10,
@@ -1881,7 +1891,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       position: 'absolute',
       width: 3,
       height: 30,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: staticColors.white,
     },
     cropHandleVerticalLeft: {
       left: 10,

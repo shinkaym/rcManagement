@@ -1,17 +1,19 @@
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import type { EmployeeItem } from '../../mock/employee-data';
 import { employeeMockData } from '../../mock/employee-data';
+import { AppTheme } from '@/shared/theme';
 
 type EmployeeFormMode = 'create' | 'edit';
 type EmployeeStatus = 'active' | 'inactive';
@@ -67,7 +69,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
               <Pressable onPress={() => {}} style={styles.avatarEditPressable}>
                 {({ pressed }) => (
                   <View style={[styles.avatarEditButton, pressed ? styles.avatarEditButtonPressed : null]}>
-                    <HugeiconsIcon icon={PencilEdit02Icon} size={14} color='#FFFFFF' strokeWidth={2.1} />
+                    <AppIcon icon={PencilEdit02Icon} size={14} color={staticColors.white} strokeWidth={2.1} />
                   </View>
                 )}
               </Pressable>
@@ -183,7 +185,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
             <Pressable onPress={onClose} style={styles.primaryPressable}>
               {({ pressed }) => (
                 <View style={[styles.primaryButton, pressed ? styles.primaryButtonPressed : null]}>
-                  <HugeiconsIcon icon={PencilEdit02Icon} size={18} color='#FFFFFF' strokeWidth={2.1} />
+                  <AppIcon icon={PencilEdit02Icon} size={18} color={staticColors.white} strokeWidth={2.1} />
                   <Text style={styles.primaryButtonLabel}>{mode === 'edit' ? 'Save' : 'Create'}</Text>
                 </View>
               )}
@@ -273,7 +275,7 @@ function buildCreateSeed(): EmployeeItem {
   };
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -313,7 +315,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       borderWidth: 1,
       borderColor: theme.colors.borderAlt,
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 8px 20px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.strong,
     },
     avatarImage: {
       width: '100%',
@@ -332,7 +334,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       justifyContent: 'center',
       borderRadius: radius.pill,
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 6px 16px rgba(245, 124, 0, 0.28)',
+      boxShadow: theme.shadow.accentButton,
     },
     avatarEditButtonPressed: {
       opacity: 0.9,
@@ -405,8 +407,8 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       backgroundColor: theme.colors.surfaceAlt,
     },
     statusOptionActive: {
-      borderColor: '#16A34A',
-      backgroundColor: '#16A34A',
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.success,
     },
     statusOptionInactive: {
       borderColor: theme.colors.danger,
@@ -422,10 +424,10 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       lineHeight: 20,
     },
     statusOptionLabelActive: {
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     statusOptionLabelInactive: {
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     actionsRow: {
       marginTop: spacing.sm,
@@ -442,14 +444,14 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 10px 24px rgba(245, 124, 0, 0.26)',
+      boxShadow: theme.shadow.accentStrong,
     },
     primaryButtonPressed: {
       opacity: 0.92,
     },
     primaryButtonLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
   });
 }

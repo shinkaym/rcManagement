@@ -1,5 +1,5 @@
 import { Calendar03Icon, Menu11Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 type MainHeaderProps = {
   centerChild?: ReactNode;
@@ -49,7 +50,7 @@ export function MainHeaderCenterChip({ label, onPress }: MainHeaderCenterChipPro
     <Pressable onPress={onPress} style={styles.centerChipPressable}>
       {({ pressed }) => (
         <View style={[styles.centerChip, pressed ? styles.buttonPressed : null]}>
-          <HugeiconsIcon color={theme.colors.textSecondary} icon={Calendar03Icon} size={18} strokeWidth={1.8} />
+          <AppIcon color={theme.colors.textSecondary} icon={Calendar03Icon} size={18} strokeWidth={1.8} />
           <Text numberOfLines={1} style={styles.centerChipLabel}>
             {label}
           </Text>
@@ -72,14 +73,14 @@ function HeaderIconButton({ icon, onPress }: HeaderIconButtonProps) {
     <Pressable onPress={onPress} style={styles.iconButtonPressable}>
       {({ pressed }) => (
         <View style={[styles.iconButton, pressed ? styles.buttonPressed : null]}>
-          <HugeiconsIcon color={theme.colors.primary} icon={icon} size={22} strokeWidth={2.2} />
+          <AppIcon color={theme.colors.primary} icon={icon} size={22} strokeWidth={2.2} />
         </View>
       )}
     </Pressable>
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number) {
+function createStyles(theme: AppTheme, topInset: number) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -125,7 +126,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number) {
       justifyContent: 'center',
       borderRadius: radius.pill,
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 4px 8px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.button,
     },
     centerChipPressable: {
       borderRadius: radius.sm,
@@ -144,7 +145,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number) {
       borderWidth: 1,
       borderColor: theme.colors.borderAlt,
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 2px 6px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.subtle,
     },
     centerChipLabel: {
       ...typography.bodyMedium,

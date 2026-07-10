@@ -1,5 +1,5 @@
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +8,7 @@ import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 type SectionCollapseProps = {
   child: ReactNode;
@@ -47,7 +48,7 @@ export function SectionCollapse({
           <View style={[styles.header, pressed ? styles.headerPressed : null]}>
             <Text style={styles.title}>{title}</Text>
             <Animated.View style={{ transform: [{ rotate }] }}>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={24} color={theme.colors.textSecondary} strokeWidth={2} />
+              <AppIcon icon={ArrowRight01Icon} size={24} color={theme.colors.textSecondary} strokeWidth={2} />
             </Animated.View>
           </View>
         )}
@@ -58,7 +59,7 @@ export function SectionCollapse({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, contentSpacing: number) {
+function createStyles(theme: AppTheme, contentSpacing: number) {
   return StyleSheet.create({
     headerPressable: {
       borderRadius: radius.md,

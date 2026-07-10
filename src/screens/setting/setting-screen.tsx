@@ -6,6 +6,7 @@ import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import { SETTING_ROUTES } from '@/navigation/route-names';
+import { AppTheme } from '@/shared/theme';
 
 export type SettingDestination =
   | typeof SETTING_ROUTES.MY_ACCOUNT
@@ -66,7 +67,7 @@ export function SettingScreen({ onSelectDestination }: SettingScreenProps) {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -98,7 +99,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.borderAlt,
-      boxShadow: `0 6px 16px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.medium,
     },
     itemCardPressed: {
       opacity: 0.9,

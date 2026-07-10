@@ -1,11 +1,13 @@
 import { Settings02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
+import { createFocusRingShadow } from '@/shared/theme/tokens/shadow';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -20,6 +22,7 @@ import {
   type CategoryIconKey,
   type CategoryItem,
 } from '../../mock/category-data';
+import { AppTheme } from '@/shared/theme';
 
 const addImageSource = require('../../../assets/images/add.png');
 
@@ -335,7 +338,7 @@ function CategoryCard({ item, onPress }: CategoryCardProps) {
       {({ pressed }) => (
         <View style={[styles.card, pressed ? styles.cardPressed : null]}>
           <View style={[styles.iconBadge, { backgroundColor: toSoftColor(item.colorValue) }]}>
-            <HugeiconsIcon color={item.colorValue} icon={iconPreset.icon} size={20} strokeWidth={2.2} />
+            <AppIcon color={item.colorValue} icon={iconPreset.icon} size={20} strokeWidth={2.2} />
           </View>
 
           <Text numberOfLines={1} style={styles.cardLabel}>
@@ -374,7 +377,7 @@ function ActionCard({ icon, imageSource, label, onPress, variant = 'solid' }: Ac
             {imageSource ? <Image resizeMode='contain' source={imageSource} style={styles.actionImage} /> : null}
 
             {icon ? (
-              <HugeiconsIcon
+              <AppIcon
                 color={variant === 'edit' ? theme.colors.surface : theme.colors.textSecondary}
                 icon={icon}
                 size={20}
@@ -419,14 +422,14 @@ function IconOptionButton({ accentColorValue, iconKey, isSelected, onPress }: Ic
                   styles.iconOptionSelected,
                   {
                     borderColor: solidColor,
-                    boxShadow: `0 0 0 2px ${softColor}`,
+                    boxShadow: createFocusRingShadow(softColor),
                   },
                 ]
               : null,
             pressed ? styles.iconOptionPressed : null,
           ]}
         >
-          <HugeiconsIcon
+          <AppIcon
             color={isSelected ? solidColor : theme.colors.textHint}
             icon={iconPreset.icon}
             size={20}
@@ -464,7 +467,7 @@ function ColorOptionButton({ colorValue, isSelected, onPress }: ColorOptionButto
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -514,7 +517,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      boxShadow: `0 8px 18px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.lifted,
     },
     cardDashed: {
       borderStyle: 'dashed',
@@ -580,7 +583,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       borderTopRightRadius: radius.xxl,
       borderCurve: 'continuous',
       paddingTop: spacing.xs,
-      boxShadow: '0 -12px 24px rgba(0, 0, 0, 0.14)',
+      boxShadow: theme.shadow.sheet,
       maxHeight: '82%',
     },
     sheetHandle: {
@@ -691,7 +694,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       height: 34,
       borderRadius: radius.pill,
       borderWidth: 2,
-      borderColor: 'transparent',
+      borderColor: staticColors.transparent,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surface,
@@ -736,7 +739,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 10px 20px rgba(245, 124, 0, 0.22)',
+      boxShadow: theme.shadow.accentSoft,
     },
     confirmButtonDisabled: {
       opacity: 0.45,

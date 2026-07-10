@@ -4,6 +4,7 @@ import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 type FeaturePlaceholderScreenProps = {
   description: string;
@@ -36,7 +37,7 @@ export function FeaturePlaceholderScreen({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, withBottomNavSpacing: boolean) {
+function createStyles(theme: AppTheme, withBottomNavSpacing: boolean) {
   return StyleSheet.create({
     screen: {
       flex: 1,

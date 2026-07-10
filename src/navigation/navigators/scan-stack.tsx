@@ -9,6 +9,7 @@ import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { SubHeader } from '../components/sub-header';
 import type { ScanStackParamList } from '../navigation-types';
 import { ROOT_ROUTES, SCAN_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<ScanStackParamList>();
 
@@ -48,7 +49,7 @@ function PreviewScanRouteScreen({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     previewScreen: {
       flex: 1,

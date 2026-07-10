@@ -8,7 +8,7 @@ import {
   ShoppingBag01Icon,
   Store04Icon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { CategoryPickerSheet } from '@/features/category/components/category-pic
 import { SegmentTabs } from '@/features/receipts/components/segment-tabs';
 import { defaultCategorySeed, type CategoryItem } from '@/mock/category-data';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -34,6 +35,7 @@ import {
   sanitizeIntegerInput,
 } from '../../features/receipts/receipt-item-utils';
 import type { ReceiptItemState } from '../../features/receipts/receipt-types';
+import { AppTheme } from '@/shared/theme';
 
 const footerHeight = 116;
 
@@ -500,7 +502,7 @@ function SectionHeader({ icon, title, trailing }: SectionHeaderProps) {
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.sectionTitleRow}>
-        <HugeiconsIcon icon={icon} color={theme.colors.secondary} size={22} strokeWidth={1.9} />
+        <AppIcon icon={icon} color={theme.colors.secondary} size={22} strokeWidth={1.9} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
 
@@ -529,7 +531,7 @@ function SectionEditButton({ disabled = false, label, onPress }: SectionEditButt
             pressed && !disabled ? styles.sectionEditButtonPressed : null,
           ]}
         >
-          <HugeiconsIcon
+          <AppIcon
             icon={Edit02Icon}
             color={disabled ? theme.colors.textHint : theme.colors.secondary}
             size={14}
@@ -556,7 +558,7 @@ function MerchantDateField({ onPress, value }: MerchantDateFieldProps) {
       {({ pressed }) => (
         <View style={[styles.dateField, pressed ? styles.dateFieldPressed : null]}>
           <Text style={styles.dateFieldValue}>{value}</Text>
-          <HugeiconsIcon icon={PencilEdit02Icon} color={theme.colors.secondary} size={16} strokeWidth={1.8} />
+          <AppIcon icon={PencilEdit02Icon} color={theme.colors.secondary} size={16} strokeWidth={1.8} />
         </View>
       )}
     </Pressable>
@@ -657,7 +659,7 @@ function EditableTotalRow({
           <Pressable onPress={onEdit} style={styles.totalEditPressable}>
             {({ pressed }) => (
               <View style={pressed ? styles.totalEditPressed : null}>
-                <HugeiconsIcon icon={PencilEdit02Icon} color={theme.colors.secondary} size={16} strokeWidth={1.9} />
+                <AppIcon icon={PencilEdit02Icon} color={theme.colors.secondary} size={16} strokeWidth={1.9} />
               </View>
             )}
           </Pressable>
@@ -667,7 +669,7 @@ function EditableTotalRow({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, bottomInset: number) {
+function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -706,7 +708,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       borderWidth: 1,
       borderColor: 'rgba(225, 227, 228, 0.9)',
       backgroundColor: theme.colors.surface,
-      boxShadow: '0 10px 24px rgba(17, 24, 39, 0.06)',
+      boxShadow: theme.shadow.popover,
       gap: spacing.md,
     },
     merchantGlow: {
@@ -1040,14 +1042,14 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 8px 18px rgba(245, 124, 0, 0.28)',
+      boxShadow: theme.shadow.accent,
     },
     footerPrimaryButtonPressed: {
       opacity: 0.92,
     },
     footerPrimaryLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
   });
 }

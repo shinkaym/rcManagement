@@ -12,6 +12,7 @@ import { useShellDrawer } from '../components/shell-drawer-context';
 import { SubHeader } from '../components/sub-header';
 import type { SettingStackParamList } from '../navigation-types';
 import { SETTING_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<SettingStackParamList>();
 
@@ -118,7 +119,7 @@ function SubScreenFrame({ children, onBackPress, title }: SubScreenFrameProps) {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,

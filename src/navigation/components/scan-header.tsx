@@ -9,13 +9,15 @@ import {
   Image01Icon,
   Rotate01Icon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
+import { AppTheme } from '@/shared/theme';
 
 type ScanHeaderMode = 'capture' | 'preview';
 
@@ -109,14 +111,14 @@ function HeaderSurfaceButton({
             pressed && !disabled ? styles.buttonPressed : null,
           ]}
         >
-          <HugeiconsIcon color='#FFFFFF' icon={icon} size={20} strokeWidth={2.1} />
+          <AppIcon color={staticColors.white} icon={icon} size={20} strokeWidth={2.1} />
         </View>
       )}
     </Pressable>
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number) {
+function createStyles(theme: AppTheme, topInset: number) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -135,7 +137,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number) {
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: 'rgba(25, 28, 29, 0.74)',
-      boxShadow: `0 10px 20px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.elevated,
     },
     buttonPressable: {
       borderRadius: radius.pill,

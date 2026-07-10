@@ -7,6 +7,7 @@ import { formatChartValue, resolveChartInterval, resolveChartMaxY } from '@/shar
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 type BarChartProps = {
   color?: string;
@@ -172,7 +173,7 @@ export function BarChart({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       height: 220,

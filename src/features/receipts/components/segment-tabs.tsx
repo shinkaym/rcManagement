@@ -1,11 +1,12 @@
 import { Home01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 export type SegmentTabItem<T> = {
   icon?: typeof Home01Icon;
@@ -39,7 +40,7 @@ export function SegmentTabs<T>({ items, onChange, selectedValue }: SegmentTabsPr
                 ]}
               >
                 {item.icon ? (
-                  <HugeiconsIcon
+                  <AppIcon
                     icon={item.icon}
                     color={isSelected ? theme.colors.surface : theme.colors.textSecondary}
                     size={15}
@@ -56,7 +57,7 @@ export function SegmentTabs<T>({ items, onChange, selectedValue }: SegmentTabsPr
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',

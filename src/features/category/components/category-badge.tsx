@@ -1,7 +1,8 @@
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { AppTheme } from '@/shared/theme';
 import { radius } from '@/shared/theme/tokens/radius';
 
 import { categoryIconCatalog, type CategoryItem } from '../../../mock/category-data';
@@ -19,7 +20,7 @@ export function CategoryBadge({ category, onPress }: CategoryBadgeProps) {
 
   const badgeContent = (
     <View style={[styles.badge, { backgroundColor: toSoftColor(category.colorValue) }]}>
-      <HugeiconsIcon icon={iconPreset.icon} color={category.colorValue} size={20} strokeWidth={1.9} />
+      <AppIcon icon={iconPreset.icon} color={category.colorValue} size={20} strokeWidth={1.9} />
     </View>
   );
 
@@ -34,7 +35,7 @@ export function CategoryBadge({ category, onPress }: CategoryBadgeProps) {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     badgePressable: {
       borderRadius: radius.lg,

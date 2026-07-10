@@ -11,6 +11,7 @@ import { typography } from '@/shared/theme/tokens/typography';
 import { EmployeeCard, EmployeeCardSkeleton } from '../../features/employee/components/employee-card';
 import type { EmployeeItem } from '../../mock/employee-data';
 import { employeeMockData } from '../../mock/employee-data';
+import { AppTheme } from '@/shared/theme';
 
 const previewItemLimit = 5;
 
@@ -182,7 +183,7 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -331,7 +332,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      boxShadow: `0 4px 12px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.card,
     },
     floatingButtonPressed: {
       opacity: 0.9,

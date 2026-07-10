@@ -1,4 +1,4 @@
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,7 @@ import {
   defaultCategorySeed,
   type CategoryItem,
 } from '../../../mock/category-data';
+import { AppTheme } from '@/shared/theme';
 
 type CategoryPickerSheetProps = {
   isVisible: boolean;
@@ -107,7 +108,7 @@ function CategoryOptionCard({ category, isSelected, onPress }: CategoryOptionCar
       {({ pressed }) => (
         <View style={[styles.card, isSelected ? styles.cardSelected : null, pressed ? styles.cardPressed : null]}>
           <View style={[styles.iconBadge, { backgroundColor: toSoftColor(category.colorValue) }]}>
-            <HugeiconsIcon icon={iconPreset.icon} color={category.colorValue} size={18} strokeWidth={2} />
+            <AppIcon icon={iconPreset.icon} color={category.colorValue} size={18} strokeWidth={2} />
           </View>
 
           <Text numberOfLines={1} style={styles.cardLabel}>
@@ -119,7 +120,7 @@ function CategoryOptionCard({ category, isSelected, onPress }: CategoryOptionCar
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number) {
+function createStyles(theme: AppTheme, bottomInset: number) {
   return StyleSheet.create({
     root: {
       flex: 1,
@@ -139,7 +140,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surface,
       paddingTop: spacing.xs,
-      boxShadow: '0 -12px 24px rgba(0, 0, 0, 0.14)',
+      boxShadow: theme.shadow.sheet,
     },
     handle: {
       width: 52,
@@ -189,7 +190,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
     },
     cardSelected: {
       borderColor: theme.colors.primary,
-      boxShadow: '0 0 0 2px rgba(245, 124, 0, 0.12)',
+      boxShadow: theme.shadow.focusRing,
     },
     cardPressed: {
       opacity: 0.92,

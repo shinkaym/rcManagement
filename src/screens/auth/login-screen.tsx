@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { AppleLogoIcon, GoogleLogoIcon } from '@/shared/ui/icon';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
@@ -55,7 +56,7 @@ export function LoginScreen({ onContinueWithApple, onContinueWithGoogle }: Login
                 label='Continue with Apple'
                 variant='dark'
                 styles={styles}
-                icon={<AppleLogoIcon color='#FFFFFF' size={20} />}
+                icon={<AppleLogoIcon color={staticColors.white} size={20} />}
                 onPress={onContinueWithApple}
               />
             </View>
@@ -148,7 +149,7 @@ function createStyles(theme: AppTheme, minHeight: number) {
       marginTop: spacing.lg,
       fontSize: 30,
       lineHeight: 36,
-      color: '#FFFFFF',
+      color: staticColors.white,
       fontStyle: 'italic',
       textAlign: 'center',
     },
@@ -157,7 +158,7 @@ function createStyles(theme: AppTheme, minHeight: number) {
       marginTop: spacing.sm,
       fontSize: 14,
       lineHeight: 20,
-      color: '#FFFFFF',
+      color: staticColors.white,
       fontStyle: 'italic',
       textAlign: 'center',
     },
@@ -170,7 +171,7 @@ function createStyles(theme: AppTheme, minHeight: number) {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xxl,
       paddingBottom: spacing.xl,
-      boxShadow: '0 18px 36px rgba(0, 0, 0, 0.16)',
+      boxShadow: theme.shadow.hero,
       gap: spacing.md,
     },
     panelTitle: {
@@ -223,7 +224,7 @@ function createStyles(theme: AppTheme, minHeight: number) {
       textAlign: 'center',
     },
     socialButtonLabelDark: {
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     legalSection: {
       marginTop: spacing.xl,

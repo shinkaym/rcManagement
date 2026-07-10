@@ -11,6 +11,7 @@ import { useShellDrawer } from '../components/shell-drawer-context';
 import { SubHeader } from '../components/sub-header';
 import type { EmployeeStackParamList } from '../navigation-types';
 import { EMPLOYEE_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<EmployeeStackParamList>();
 
@@ -67,7 +68,7 @@ function EmployeeDetailRouteScreen({
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,

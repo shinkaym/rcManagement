@@ -11,14 +11,16 @@ import {
   UserAccountIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 export type DrawerItemKey =
   | 'home'
@@ -61,7 +63,7 @@ export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDraw
       <Pressable onPress={onClose} style={styles.closeButtonPressable}>
         {({ pressed }) => (
           <View style={[styles.closeButton, pressed ? styles.closeButtonPressed : null]}>
-            <HugeiconsIcon color='#FFFFFF' icon={Cancel01Icon} size={26} strokeWidth={2.6} />
+            <AppIcon color={staticColors.white} icon={Cancel01Icon} size={26} strokeWidth={2.6} />
           </View>
         )}
       </Pressable>
@@ -84,7 +86,7 @@ export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDraw
             <Pressable key={item.key} onPress={() => onNavigate(item.key)} style={styles.itemPressable}>
               {({ pressed }) => (
                 <View style={[styles.item, isSelected ? styles.itemSelected : null, pressed ? styles.itemPressed : null]}>
-                  <HugeiconsIcon color='#FFFFFF' icon={item.icon} size={18} strokeWidth={2.4} />
+                  <AppIcon color={staticColors.white} icon={item.icon} size={18} strokeWidth={2.4} />
                   <Text style={styles.itemLabel}>{item.label}</Text>
                 </View>
               )}
@@ -96,7 +98,7 @@ export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDraw
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, bottomInset: number) {
+function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -125,13 +127,13 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     },
     greeting: {
       ...typography.bodyLarge,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     name: {
       ...typography.titleLarge,
       fontSize: 20,
       lineHeight: 26,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     list: {
       flex: 1,
@@ -163,7 +165,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     },
     itemLabel: {
       ...typography.bodyMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
       fontFamily: typography.titleMedium.fontFamily,
       fontSize: 15,
       lineHeight: 20,

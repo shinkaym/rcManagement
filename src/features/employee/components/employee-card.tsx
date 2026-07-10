@@ -1,13 +1,16 @@
+import { useMemo } from 'react';
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppIcon } from '@/shared/ui/icon';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import type { EmployeeItem } from '../../../mock/employee-data';
+import { AppTheme } from '@/shared/theme';
 
 type EmployeeCardProps = {
   employee: EmployeeItem;
@@ -16,19 +19,16 @@ type EmployeeCardProps = {
 
 export function EmployeeCard({ employee, onEdit }: EmployeeCardProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, employee.accentColor);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const statusLabel = employee.status === 'active' ? 'Active' : 'Inactive';
 
   return (
     <View style={styles.container}>
-      <View style={styles.avatarContainer}>
-        <Image source={{ uri: employee.avatarUrl }} style={styles.avatarImage} resizeMode='cover' />
-      </View>
-
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <View style={styles.rolePill}>
-            <Text numberOfLines={1} style={styles.roleText}>
-              {employee.role}
+          <View style={[styles.statusPill, employee.status === 'active' ? styles.statusOptionActive : styles.statusOptionInactive]}>
+            <Text numberOfLines={1} style={styles.statusText}>
+              {statusLabel}
             </Text>
           </View>
 
@@ -45,7 +45,7 @@ export function EmployeeCard({ employee, onEdit }: EmployeeCardProps) {
       <Pressable hitSlop={8} onPress={() => onEdit?.(employee)} style={styles.editPressable}>
         {({ pressed }) => (
           <View style={pressed ? styles.editButtonPressed : null}>
-            <HugeiconsIcon icon={PencilEdit02Icon} size={20} color={theme.colors.textSecondary} strokeWidth={2.2} />
+            <AppIcon icon={PencilEdit02Icon} size={20} color={theme.colors.textSecondary} strokeWidth={2.2} />
           </View>
         )}
       </Pressable>
@@ -63,8 +63,6 @@ export function EmployeeCardSkeleton({ withSpacing = false }: EmployeeCardSkelet
 
   return (
     <View style={[styles.container, withSpacing ? styles.containerSpacing : null]}>
-      <View style={styles.avatarPlaceholder} />
-
       <View style={styles.content}>
         <View style={styles.titleRow}>
           <View style={styles.pillPlaceholder} />
@@ -79,21 +77,7 @@ export function EmployeeCardSkeleton({ withSpacing = false }: EmployeeCardSkelet
   );
 }
 
-function withOpacity(hexColor: string, alpha: number) {
-  const normalized = hexColor.replace('#', '');
-
-  if (normalized.length !== 6) {
-    return `rgba(245, 124, 0, ${alpha})`;
-  }
-
-  const red = Number.parseInt(normalized.slice(0, 2), 16);
-  const green = Number.parseInt(normalized.slice(2, 4), 16);
-  const blue = Number.parseInt(normalized.slice(4, 6), 16);
-
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-}
-
-function createStyles(theme: ReturnType<typeof useAppTheme>, accentColor: string) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -105,23 +89,8 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, accentColor: string
       borderColor: theme.colors.borderAlt,
       backgroundColor: theme.colors.surface,
     },
-    avatarContainer: {
-      width: 52,
-      height: 52,
-      overflow: 'hidden',
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      borderWidth: 1,
-      borderColor: theme.colors.borderAlt,
-      backgroundColor: withOpacity(accentColor, 0.18),
-    },
-    avatarImage: {
-      width: '100%',
-      height: '100%',
-    },
     content: {
       flex: 1,
-      marginLeft: spacing.sm,
       gap: spacing.xxs,
     },
     titleRow: {
@@ -129,17 +98,25 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, accentColor: string
       alignItems: 'center',
       gap: spacing.xs,
     },
-    rolePill: {
+    statusPill: {
       maxWidth: 112,
       paddingHorizontal: spacing.xs,
       paddingVertical: spacing.xxs,
       borderRadius: radius.sm,
       borderCurve: 'continuous',
-      backgroundColor: theme.colors.surfaceAlt,
+      borderWidth: 1,
     },
-    roleText: {
+    statusOptionActive: {
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.success,
+    },
+    statusOptionInactive: {
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.danger,
+    },
+    statusText: {
       ...typography.labelLarge,
-      color: theme.colors.textSecondary,
+      color: staticColors.white,
       fontFamily: typography.titleMedium.fontFamily,
     },
     name: {
@@ -161,7 +138,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, accentColor: string
   });
 }
 
-function createSkeletonStyles(theme: ReturnType<typeof useAppTheme>) {
+function createSkeletonStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -176,16 +153,8 @@ function createSkeletonStyles(theme: ReturnType<typeof useAppTheme>) {
     containerSpacing: {
       marginTop: spacing.sm,
     },
-    avatarPlaceholder: {
-      width: 52,
-      height: 52,
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      backgroundColor: 'rgba(148, 163, 184, 0.22)',
-    },
     content: {
       flex: 1,
-      marginLeft: spacing.sm,
       gap: spacing.xs,
     },
     titleRow: {

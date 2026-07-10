@@ -21,6 +21,7 @@ import { SegmentTabs } from '../../features/receipts/components/segment-tabs';
 import { TransactionProgressCard } from '../../features/receipts/components/transaction-progress-card';
 import type { ProgressItem, ReportChartType } from '../../mock/report-data';
 import { buildReportData } from '../../mock/report-data';
+import { AppTheme } from '@/shared/theme';
 
 const chartTabs = [
   { label: 'Column', value: 'column' as const },
@@ -251,7 +252,7 @@ function TransactionGroupSection({ group, style }: TransactionGroupSectionProps)
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -335,7 +336,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      boxShadow: `0 4px 12px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.card,
     },
     floatingButtonPressed: {
       opacity: 0.9,

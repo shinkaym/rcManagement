@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 
 import { AppDrawerContent, type DrawerItemKey } from '../components/app-drawer-content';
 import { ShellDrawerContext } from '../components/shell-drawer-context';
@@ -13,6 +14,7 @@ import type { AppDrawerParamList } from '../navigation-types';
 import { CATEGORY_ROUTES, DRAWER_ROUTES, EMPLOYEE_ROUTES, HOME_ROUTES, REPORT_ROUTES, ROOT_ROUTES, SETTING_ROUTES, TAB_ROUTES } from '../route-names';
 import { CategoryStackNavigator } from './category-stack';
 import { MainTabsNavigator } from './main-tabs';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<AppDrawerParamList>();
 
@@ -51,7 +53,7 @@ export function AppDrawerNavigator() {
   return (
     <Stack.Navigator
       initialRouteName={DRAWER_ROUTES.MAIN_TABS}
-      screenOptions={{ animation: 'none', contentStyle: { backgroundColor: 'transparent' }, headerShown: false }}
+      screenOptions={{ animation: 'none', contentStyle: { backgroundColor: staticColors.transparent }, headerShown: false }}
     >
       <Stack.Screen name={DRAWER_ROUTES.MAIN_TABS} component={MainTabsDrawerScreen} />
       <Stack.Screen name={DRAWER_ROUTES.CATEGORY_STACK} component={CategoryDrawerScreen} />
@@ -306,7 +308,7 @@ function getActiveRouteNameFromParams(params: unknown): string | null {
   return nestedScreenName ?? screenName;
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     shell: {
       flex: 1,
@@ -330,7 +332,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     cardShadowOpen: {
       borderRadius: shellMetrics.cardCornerRadius,
       borderCurve: 'continuous',
-      boxShadow: '0 18px 40px rgba(0, 0, 0, 0.22)',
+      boxShadow: theme.shadow.panel,
     },
     card: {
       flex: 1,

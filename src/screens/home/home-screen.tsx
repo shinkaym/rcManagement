@@ -20,6 +20,7 @@ import {
 } from '../../mock/home-data';
 import { SectionCollapse } from '../../shared/ui/section/section-collapse';
 import { SectionViewMore } from '../../shared/ui/section/section-view-more';
+import { AppTheme } from '@/shared/theme';
 
 export function HomeScreen() {
   const theme = useAppTheme();
@@ -238,7 +239,7 @@ function TransactionGroupSection({ group, style }: TransactionGroupSectionProps)
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -263,7 +264,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 4px 12px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.card,
     },
     weekdayRow: {
       flexDirection: 'row',
@@ -383,7 +384,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      boxShadow: `0 4px 12px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.card,
     },
     floatingButtonPressed: {
       opacity: 0.9,

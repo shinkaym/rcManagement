@@ -1,4 +1,5 @@
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { useMemo } from 'react';
+import { AppIcon } from '@/shared/ui/icon';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +10,7 @@ import { typography } from '@/shared/theme/tokens/typography';
 
 import type { TransactionItem } from '../../../mock/home-data';
 import { formatCurrency } from '../../../mock/home-data';
+import { AppTheme } from '@/shared/theme';
 
 type TransactionCardProps = {
   icon: TransactionItem['icon'];
@@ -21,12 +23,12 @@ type TransactionCardProps = {
 
 export function TransactionCard({ icon, note, style, time, title, total }: TransactionCardProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconContainer}>
-        <HugeiconsIcon icon={icon} size={24} color={theme.colors.primary} strokeWidth={1.8} />
+        <AppIcon icon={icon} size={24} color={theme.colors.primary} strokeWidth={1.8} />
       </View>
 
       <View style={styles.content}>
@@ -49,7 +51,7 @@ export function TransactionCard({ icon, note, style, time, title, total }: Trans
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',

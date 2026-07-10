@@ -8,6 +8,7 @@ import { MainHeader, MainHeaderCenterChip } from '../components/main-header';
 import { useShellDrawer } from '../components/shell-drawer-context';
 import type { ReportStackParamList } from '../navigation-types';
 import { REPORT_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<ReportStackParamList>();
 
@@ -35,7 +36,7 @@ function ReportRouteScreen() {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,

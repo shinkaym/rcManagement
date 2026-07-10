@@ -1,4 +1,5 @@
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { memo, useMemo } from 'react';
+import { AppIcon } from '@/shared/ui/icon';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatCurrency } from '@/mock/home-data';
@@ -7,10 +8,11 @@ import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppTheme } from '@/shared/theme';
 
 type TransactionProgressCardProps = ProgressItem;
 
-export function TransactionProgressCard({
+export const TransactionProgressCard = memo(function TransactionProgressCard({
   amount,
   color,
   icon,
@@ -20,13 +22,13 @@ export function TransactionProgressCard({
   trackColor,
 }: TransactionProgressCardProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const progressWidth = `${Math.max(0, Math.min(progress, 1)) * 100}%` as `${number}%`;
 
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <HugeiconsIcon icon={icon} size={24} color={theme.colors.primary} strokeWidth={1.8} />
+        <AppIcon icon={icon} size={24} color={theme.colors.primary} strokeWidth={1.8} />
       </View>
 
       <View style={styles.content}>
@@ -46,9 +48,9 @@ export function TransactionProgressCard({
       </View>
     </View>
   );
-}
+});
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',

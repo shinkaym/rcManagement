@@ -1,16 +1,18 @@
 import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AppIcon } from '@/shared/ui/icon';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
+import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import { formatCurrency, getReceiptItemTotal } from '../receipt-item-utils';
 import type { ReceiptItemState } from '../receipt-types';
+import { AppTheme } from '@/shared/theme';
 
 const dialogColumnWidths = {
   actions: 44,
@@ -80,7 +82,7 @@ export function ItemsEditDialog({
           <Pressable onPress={onAddItem} style={styles.addItemPressable}>
             {({ pressed }) => (
               <View style={[styles.addItemButton, pressed ? styles.addItemButtonPressed : null]}>
-                <HugeiconsIcon icon={Add01Icon} color='#FFFFFF' size={18} strokeWidth={1.9} />
+                <AppIcon icon={Add01Icon} color={staticColors.white} size={18} strokeWidth={1.9} />
                 <Text style={styles.addItemLabel}>Add Item</Text>
               </View>
             )}
@@ -265,7 +267,7 @@ function DialogSurfaceIconButton({ icon, onPress }: DialogSurfaceIconButtonProps
     <Pressable onPress={onPress} style={styles.surfaceIconPressable}>
       {({ pressed }) => (
         <View style={[styles.surfaceIconButton, pressed ? styles.surfaceIconButtonPressed : null]}>
-          <HugeiconsIcon icon={icon} color={theme.colors.primary} size={20} strokeWidth={2} />
+          <AppIcon icon={icon} color={theme.colors.primary} size={20} strokeWidth={2} />
         </View>
       )}
     </Pressable>
@@ -294,14 +296,14 @@ function IconMiniButton({ destructive = false, disabled = false, icon, onPress }
             pressed && !disabled ? styles.iconMiniButtonPressed : null,
           ]}
         >
-          <HugeiconsIcon icon={icon} color={disabled ? theme.colors.textHint : color} size={14} strokeWidth={1.9} />
+          <AppIcon icon={icon} color={disabled ? theme.colors.textHint : color} size={14} strokeWidth={1.9} />
         </View>
       )}
     </Pressable>
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number) {
+function createStyles(theme: AppTheme, bottomInset: number) {
   return StyleSheet.create({
     dialogBackdrop: {
       flex: 1,
@@ -319,7 +321,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surface,
       padding: spacing.lg,
-      boxShadow: '0 16px 40px rgba(17, 24, 39, 0.16)',
+      boxShadow: theme.shadow.dialog,
       gap: spacing.md,
     },
     dialogHeader: {
@@ -350,7 +352,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       justifyContent: 'center',
       borderRadius: radius.pill,
       backgroundColor: theme.colors.surface,
-      boxShadow: `0 4px 8px ${theme.colors.shadow}`,
+      boxShadow: theme.shadow.button,
     },
     surfaceIconButtonPressed: {
       opacity: 0.9,
@@ -374,7 +376,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
     },
     addItemLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
     horizontalHintPressable: {
       alignSelf: 'flex-start',
@@ -521,14 +523,14 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, bottomInset: number
       borderRadius: radius.lg,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.primary,
-      boxShadow: '0 8px 18px rgba(245, 124, 0, 0.24)',
+      boxShadow: theme.shadow.accentMuted,
     },
     dialogFooterPrimaryButtonPressed: {
       opacity: 0.92,
     },
     dialogFooterPrimaryLabel: {
       ...typography.titleMedium,
-      color: '#FFFFFF',
+      color: staticColors.white,
     },
   });
 }

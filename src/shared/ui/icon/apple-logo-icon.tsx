@@ -1,12 +1,14 @@
 import Svg, { Path } from 'react-native-svg';
 
+import { staticColors } from '@/shared/theme/tokens/colors';
+
 type AppleLogoIconProps = {
   color?: string;
   size?: number;
 };
 
 export function AppleLogoIcon({
-  color = '#000000',
+  color = staticColors.black,
   size = 20,
 }: AppleLogoIconProps) {
   return (

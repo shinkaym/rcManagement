@@ -8,6 +8,7 @@ import { MainHeader } from '../components/main-header';
 import { useShellDrawer } from '../components/shell-drawer-context';
 import type { CategoryStackParamList } from '../navigation-types';
 import { CATEGORY_ROUTES } from '../route-names';
+import { AppTheme } from '@/shared/theme';
 
 const Stack = createNativeStackNavigator<CategoryStackParamList>();
 
@@ -34,7 +35,7 @@ function CategoryRouteScreen() {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useAppTheme>) {
+function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: {
       flex: 1,

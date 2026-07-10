@@ -7,19 +7,19 @@ import {
   RotateCcwSquareIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
-import { launchImageLibrary } from 'react-native-image-picker';
-import PhotoManipulator, { MimeType, RotationMode } from 'react-native-photo-manipulator';
-import { check, openSettings, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
-import { Camera, useCameraDevice, usePhotoOutput, type CameraRef } from 'react-native-vision-camera';
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Image } from 'expo-image';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
+import { createAssetAsync, requestPermissionsAsync } from 'expo-media-library/legacy';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   ActivityIndicator,
-  Image,
   LayoutChangeEvent,
-  Platform,
+  Linking,
   Pressable,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -30,8 +30,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { ScanAppBar } from '@/shared/shell/components/scan-app-bar';
-import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
+import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
 const minZoomLevel = 1;
@@ -64,20 +64,13 @@ type ImageFrame = CropRect;
 type CropHandlePosition = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 type CropEdgePosition = 'bottom' | 'left' | 'right' | 'top';
 
-type ScanScreenProps = {
-  onBackToHome?: () => void;
-  onSendImage?: () => void;
-};
-
-type CameraPermissionStatus = 'blocked' | 'checking' | 'denied' | 'granted';
-type MediaPermissionKind = 'read' | 'save';
-
-export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
+export function ScanScreen() {
+  const router = useRouter();
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
-  const cameraRef = useRef<CameraRef | null>(null);
-  const photoOutput = usePhotoOutput();
+  const cameraRef = useRef<any>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [cameraFacing, setCameraFacing] = useState<'back' | 'front'>('back');
   const [cropRect, setCropRect] = useState<CropRect | null>(null);
   const [cropDraftImage, setCropDraftImage] = useState<PreviewImageState | null>(null);
@@ -91,58 +84,18 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
   const [stageLayout, setStageLayout] = useState<StageLayout>({ width: 0, height: 0 });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [cameraPermissionStatus, setCameraPermissionStatus] = useState<CameraPermissionStatus>('checking');
-  const device = useCameraDevice(cameraFacing);
-  const hasCameraPermission = cameraPermissionStatus === 'granted';
 
-  const minAvailableZoom = Math.max(minZoomLevel, device?.minZoom ?? minZoomLevel);
-  const maxAvailableZoom = Math.max(minAvailableZoom, Math.min(maxZoomLevel, device?.maxZoom ?? maxZoomLevel));
-  const shouldShowCameraOverlay =
-    mode === 'capture' && (!hasCameraPermission || !device || !isCameraReady || isRetryingCamera);
+  const normalizedZoom = (zoomLevel - minZoomLevel) / (maxZoomLevel - minZoomLevel);
+  const hasCameraPermission = cameraPermission?.granted === true;
+  const shouldShowCameraOverlay = mode === 'capture' && (!hasCameraPermission || !isCameraReady || isRetryingCamera);
   const activeImage = mode === 'crop' ? cropDraftImage : previewImage;
   const imageFrame = activeImage ? getContainedFrame(stageLayout, activeImage) : null;
 
-  const requestCameraAccess = useCallback(async () => {
-    const permission = getCameraPermission();
-
-    if (!permission) {
-      setCameraPermissionStatus('granted');
-      return 'granted' as const;
-    }
-
-    const currentStatus = await check(permission);
-
-    if (currentStatus === RESULTS.GRANTED || currentStatus === RESULTS.LIMITED) {
-      setCameraPermissionStatus('granted');
-      return 'granted' as const;
-    }
-
-    if (currentStatus === RESULTS.BLOCKED) {
-      setCameraPermissionStatus('blocked');
-      return 'blocked' as const;
-    }
-
-    const requestedStatus = await request(permission);
-
-    if (requestedStatus === RESULTS.GRANTED || requestedStatus === RESULTS.LIMITED) {
-      setCameraPermissionStatus('granted');
-      return 'granted' as const;
-    }
-
-    if (requestedStatus === RESULTS.BLOCKED) {
-      setCameraPermissionStatus('blocked');
-      return 'blocked' as const;
-    }
-
-    setCameraPermissionStatus('denied');
-    return 'denied' as const;
-  }, []);
-
   useEffect(() => {
-    requestCameraAccess().catch(() => {
+    requestCameraPermission().catch(() => {
       setStatusMessage('Unable to request camera permission right now.');
     });
-  }, [requestCameraAccess]);
+  }, [requestCameraPermission]);
 
   useEffect(() => {
     if (!statusMessage) {
@@ -164,16 +117,12 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     setCropRect(createDefaultCropRect(imageFrame));
   }, [cropRect, imageFrame, mode]);
 
-  useEffect(() => {
-    setZoomLevel((currentValue) => clamp(currentValue, minAvailableZoom, maxAvailableZoom));
-  }, [maxAvailableZoom, minAvailableZoom]);
-
   function showMessage(message: string) {
     setStatusMessage(message);
   }
 
   function handleBackToHome() {
-    onBackToHome?.();
+    router.replace('/home');
   }
 
   function handleClosePreview() {
@@ -198,7 +147,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     setZoomLevel((currentValue) => {
       const nextValue = direction === 'in' ? currentValue + zoomStep : currentValue - zoomStep;
 
-      return clamp(Number(nextValue.toFixed(2)), minAvailableZoom, maxAvailableZoom);
+      return Math.max(minZoomLevel, Math.min(maxZoomLevel, Number(nextValue.toFixed(2))));
     });
   }
 
@@ -219,67 +168,54 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     }
 
     try {
-      const permissionStatus = await requestMediaPermission('read');
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (permissionStatus !== 'granted') {
+      if (!permission.granted) {
         showMessage(
-          permissionStatus === 'blocked'
+          permission.canAskAgain === false
             ? 'Photo library permission was denied. Open settings to continue.'
             : 'Photo library permission is required to pick receipt images.',
         );
         return;
       }
 
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
         quality: 1,
-        selectionLimit: 1,
       });
 
-      if (result.didCancel || !result.assets?.[0]) {
+      if (result.canceled || !result.assets[0]) {
         return;
       }
 
       const selectedAsset = result.assets[0];
-      const selectedUri = ensureFileUri(selectedAsset.originalPath) ?? ensureFileUri(selectedAsset.uri);
-
-      if (!selectedUri) {
-        showMessage('Unable to open the selected image right now.');
-        return;
-      }
-
       setCropRect(null);
       setCropDraftImage(null);
       setMode('preview');
-      setPreviewImage(
-        await createPreviewImageState(selectedUri, {
-          width: selectedAsset.width ?? stageLayout.width ?? 1,
-          height: selectedAsset.height ?? stageLayout.height ?? 1,
-        }),
-      );
+      setPreviewImage({
+        uri: selectedAsset.uri,
+        width: selectedAsset.width ?? stageLayout.width ?? 1,
+        height: selectedAsset.height ?? stageLayout.height ?? 1,
+      });
     } catch {
       showMessage('Unable to open the photo library right now.');
     }
   }
 
   async function handleCaptureImage() {
-    if (!device || !isCameraReady || isCapturing || isWorking) {
+    if (!cameraRef.current || !isCameraReady || isCapturing || isWorking) {
       return;
     }
 
     setIsCapturing(true);
 
     try {
-      const capturedPhoto = await photoOutput.capturePhotoToFile(
-        {
-          enableShutterSound: false,
-          flashMode: isFlashEnabled && device.hasFlash ? 'on' : 'off',
-        },
-        {},
-      );
-      const capturedUri = ensureFileUri(capturedPhoto.filePath);
+      const capturedPhoto = await cameraRef.current.takePictureAsync({
+        quality: 1,
+      });
 
-      if (!capturedUri) {
+      if (!capturedPhoto?.uri) {
         showMessage('Unable to capture image right now.');
         return;
       }
@@ -287,7 +223,11 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
       setCropRect(null);
       setCropDraftImage(null);
       setMode('preview');
-      setPreviewImage(await createPreviewImageState(capturedUri));
+      setPreviewImage({
+        uri: capturedPhoto.uri,
+        width: capturedPhoto.width ?? stageLayout.width ?? 1,
+        height: capturedPhoto.height ?? stageLayout.height ?? 1,
+      });
     } catch {
       showMessage('Unable to capture image right now.');
     } finally {
@@ -299,7 +239,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     setIsRetryingCamera(true);
 
     try {
-      await requestCameraAccess();
+      await requestCameraPermission();
       setIsCameraReady(false);
     } catch {
       showMessage('Unable to request camera permission right now.');
@@ -353,8 +293,19 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
         }
       },
       async (imageUri) => {
-        const rotatedUri = await PhotoManipulator.rotateImage(imageUri, RotationMode.R90, MimeType.JPEG);
-        return createPreviewImageState(ensureFileUri(rotatedUri) ?? rotatedUri);
+        const context = ImageManipulator.manipulate(imageUri);
+        context.rotate(90);
+        const renderedImage = await context.renderAsync();
+        const savedImage = await renderedImage.saveAsync({
+          compress: 1,
+          format: SaveFormat.JPEG,
+        });
+
+        return {
+          uri: savedImage.uri,
+          width: savedImage.width,
+          height: savedImage.height,
+        };
       },
     );
 
@@ -375,8 +326,19 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     setIsWorking(true);
 
     try {
-      const croppedUri = await PhotoManipulator.crop(cropDraftImage.uri, cropInPixels, undefined, MimeType.JPEG);
-      setPreviewImage(await createPreviewImageState(ensureFileUri(croppedUri) ?? croppedUri));
+      const context = ImageManipulator.manipulate(cropDraftImage.uri);
+      context.crop(cropInPixels);
+      const renderedImage = await context.renderAsync();
+      const savedImage = await renderedImage.saveAsync({
+        compress: 1,
+        format: SaveFormat.JPEG,
+      });
+
+      setPreviewImage({
+        uri: savedImage.uri,
+        width: savedImage.width,
+        height: savedImage.height,
+      });
       setCropDraftImage(null);
       setCropRect(null);
       setMode('preview');
@@ -405,18 +367,18 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     setIsWorking(true);
 
     try {
-      const permissionStatus = await requestMediaPermission('save');
+      const permission = await requestPermissionsAsync(true);
 
-      if (permissionStatus !== 'granted') {
+      if (!permission.granted) {
         showMessage(
-          permissionStatus === 'blocked'
+          permission.canAskAgain === false
             ? 'Photo library permission was denied. Open settings to continue.'
             : 'Photo library permission is required to download receipt images.',
         );
         return;
       }
 
-      await CameraRoll.save(previewImage.uri, { type: 'photo' });
+      await createAssetAsync(previewImage.uri);
       showMessage('Image saved to your photo library.');
     } catch {
       showMessage('Unable to save the image right now.');
@@ -426,88 +388,24 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
   }
 
   function handleSendImage() {
-    onSendImage?.();
-  }
-
-  async function requestMediaPermission(kind: MediaPermissionKind) {
-    const permission = getMediaPermission(kind);
-
-    if (!permission) {
-      return 'granted' as const;
-    }
-
-    const currentStatus = await check(permission);
-    if (currentStatus === RESULTS.GRANTED || currentStatus === RESULTS.LIMITED) {
-      return 'granted' as const;
-    }
-
-    if (currentStatus === RESULTS.BLOCKED) {
-      return 'blocked' as const;
-    }
-
-    const requestedStatus = await request(permission);
-
-    if (requestedStatus === RESULTS.GRANTED || requestedStatus === RESULTS.LIMITED) {
-      return 'granted' as const;
-    }
-
-    if (requestedStatus === RESULTS.BLOCKED) {
-      return 'blocked' as const;
-    }
-
-    return 'denied' as const;
-  }
-
-  function getCameraPermission() {
-    if (Platform.OS === 'ios') {
-      return PERMISSIONS.IOS.CAMERA;
-    }
-
-    if (Platform.OS === 'android') {
-      return PERMISSIONS.ANDROID.CAMERA;
-    }
-
-    return null;
-  }
-
-  function getMediaPermission(kind: MediaPermissionKind) {
-    if (Platform.OS === 'ios') {
-      return kind === 'read' ? PERMISSIONS.IOS.PHOTO_LIBRARY : PERMISSIONS.IOS.PHOTO_LIBRARY_ADD_ONLY;
-    }
-
-    if (Platform.OS === 'android') {
-      const androidApiLevel = Number(Platform.Version);
-
-      if (kind === 'read') {
-        return androidApiLevel >= 33
-          ? PERMISSIONS.ANDROID.READ_MEDIA_IMAGES
-          : PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
-      }
-
-      return androidApiLevel >= 29 ? null : PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE;
-    }
-
-    return null;
+    router.push('/scan/preview');
   }
 
   return (
     <>
-      <StatusBar barStyle='light-content' />
+      <StatusBar style='light' />
       <View style={styles.screen}>
-        {mode === 'capture' && hasCameraPermission && device ? (
-          <Camera
+        {mode === 'capture' && hasCameraPermission ? (
+          <CameraView
             ref={cameraRef}
             style={styles.cameraPreview}
-            device={device}
-            implementationMode='compatible'
-            isActive
-            outputs={[photoOutput]}
-            resizeMode='cover'
-            torchMode={isFlashEnabled && device.hasTorch ? 'on' : 'off'}
-            zoom={zoomLevel}
-            onError={() => showMessage('Unable to start camera right now.')}
-            onPreviewStarted={() => setIsCameraReady(true)}
-            onPreviewStopped={() => setIsCameraReady(false)}
+            facing={cameraFacing}
+            flash={isFlashEnabled ? 'on' : 'off'}
+            enableTorch={isFlashEnabled}
+            zoom={normalizedZoom}
+            mirror={cameraFacing === 'front'}
+            animateShutter={false}
+            onCameraReady={() => setIsCameraReady(true)}
           />
         ) : (
           <View style={styles.previewBackdrop}>
@@ -535,7 +433,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
 
           <View style={styles.centerStage} onLayout={handleStageLayout}>
             {activeImage ? (
-              <Image source={{ uri: activeImage.uri }} style={styles.previewImage} resizeMode='contain' />
+              <Image source={{ uri: activeImage.uri }} style={styles.previewImage} contentFit='contain' />
             ) : null}
 
             {mode === 'crop' && imageFrame && cropRect ? (
@@ -544,22 +442,16 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
 
             {shouldShowCameraOverlay ? (
               <CameraStatusOverlay
-                canOpenSettings={cameraPermissionStatus === 'blocked'}
+                canOpenSettings={cameraPermission?.canAskAgain === false}
                 errorMessage={
-                  !hasCameraPermission
-                    ? cameraPermissionStatus === 'blocked'
+                  hasCameraPermission
+                    ? 'Preparing camera...'
+                    : cameraPermission?.canAskAgain === false
                       ? 'Camera permission was denied previously. Open settings to continue.'
                       : 'Camera permission is required to scan receipts.'
-                    : !device
-                      ? 'No camera device is available right now.'
-                      : 'Preparing camera...'
                 }
-                isLoading={isRetryingCamera || (hasCameraPermission && !!device && !isCameraReady)}
-                onOpenSettings={() => {
-                  openSettings('application').catch(() => {
-                    showMessage('Unable to open settings right now.');
-                  });
-                }}
+                isLoading={hasCameraPermission || isRetryingCamera}
+                onOpenSettings={() => Linking.openSettings()}
                 onRetry={handleRetryCamera}
               />
             ) : null}
@@ -569,9 +461,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
             <CaptureFooter
               currentZoomLevel={zoomLevel}
               isBusy={isCapturing}
-              maxZoomValue={maxAvailableZoom}
               message={statusMessage}
-              minZoomValue={minAvailableZoom}
               onCapture={handleCaptureImage}
               onZoomIn={() => handleZoomStep('in')}
               onZoomOut={() => handleZoomStep('out')}
@@ -600,45 +490,6 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
       </View>
     </>
   );
-}
-
-async function createPreviewImageState(
-  uri: string,
-  fallbackSize?: Partial<Pick<PreviewImageState, 'height' | 'width'>>,
-): Promise<PreviewImageState> {
-  const normalizedUri = ensureFileUri(uri) ?? uri;
-  const resolvedSize =
-    fallbackSize?.width && fallbackSize?.height
-      ? { width: fallbackSize.width, height: fallbackSize.height }
-      : await getImageSize(normalizedUri);
-
-  return {
-    uri: normalizedUri,
-    width: resolvedSize.width,
-    height: resolvedSize.height,
-  };
-}
-
-function getImageSize(uri: string): Promise<Pick<PreviewImageState, 'height' | 'width'>> {
-  return new Promise((resolve, reject) => {
-    Image.getSize(
-      uri,
-      (width, height) => resolve({ width, height }),
-      reject,
-    );
-  });
-}
-
-function ensureFileUri(uri?: string) {
-  if (!uri) {
-    return null;
-  }
-
-  if (/^[a-z][a-z0-9+\-.]*:\/\//i.test(uri)) {
-    return uri;
-  }
-
-  return `file://${uri}`;
 }
 
 type CameraStatusOverlayProps = {
@@ -705,24 +556,13 @@ function PillActionButton({ label, onPress, outlined = false }: PillActionButton
 type CaptureFooterProps = {
   currentZoomLevel: number;
   isBusy: boolean;
-  maxZoomValue: number;
   message: string | null;
-  minZoomValue: number;
   onCapture: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 };
 
-function CaptureFooter({
-  currentZoomLevel,
-  isBusy,
-  maxZoomValue,
-  message,
-  minZoomValue,
-  onCapture,
-  onZoomIn,
-  onZoomOut,
-}: CaptureFooterProps) {
+function CaptureFooter({ currentZoomLevel, isBusy, message, onCapture, onZoomIn, onZoomOut }: CaptureFooterProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
 
@@ -734,13 +574,7 @@ function CaptureFooter({
         </View>
       ) : null}
 
-      <ZoomControl
-        currentZoomLevel={currentZoomLevel}
-        maxZoomValue={maxZoomValue}
-        minZoomValue={minZoomValue}
-        onZoomIn={onZoomIn}
-        onZoomOut={onZoomOut}
-      />
+      <ZoomControl currentZoomLevel={currentZoomLevel} onZoomIn={onZoomIn} onZoomOut={onZoomOut} />
 
       <CaptureButton isBusy={isBusy} onPress={onCapture} />
     </View>
@@ -806,19 +640,16 @@ function CropFooter({ isWorking, message, onCancel, onDone, onRotate }: CropFoot
 
 type ZoomControlProps = {
   currentZoomLevel: number;
-  maxZoomValue: number;
-  minZoomValue: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
 };
 
-function ZoomControl({ currentZoomLevel, maxZoomValue, minZoomValue, onZoomIn, onZoomOut }: ZoomControlProps) {
+function ZoomControl({ currentZoomLevel, onZoomIn, onZoomOut }: ZoomControlProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
   const trackWidth = 220;
   const thumbSize = 18;
-  const zoomRange = maxZoomValue - minZoomValue;
-  const progress = zoomRange <= 0 ? 0 : (currentZoomLevel - minZoomValue) / zoomRange;
+  const progress = (currentZoomLevel - minZoomLevel) / (maxZoomLevel - minZoomLevel);
   const thumbLeft = progress * (trackWidth - thumbSize);
 
   return (
@@ -1375,16 +1206,16 @@ function resizeCropRect(
 function mapCropRectToImagePixels(cropRect: CropRect, imageFrame: ImageFrame, previewImage: PreviewImageState) {
   const scaleX = previewImage.width / imageFrame.width;
   const scaleY = previewImage.height / imageFrame.height;
-  const x = Math.max(0, Math.round((cropRect.x - imageFrame.x) * scaleX));
-  const y = Math.max(0, Math.round((cropRect.y - imageFrame.y) * scaleY));
+  const originX = Math.max(0, Math.round((cropRect.x - imageFrame.x) * scaleX));
+  const originY = Math.max(0, Math.round((cropRect.y - imageFrame.y) * scaleY));
   const width = Math.max(1, Math.round(cropRect.width * scaleX));
   const height = Math.max(1, Math.round(cropRect.height * scaleY));
 
   return {
-    x,
-    y,
-    width: Math.min(width, previewImage.width - x),
-    height: Math.min(height, previewImage.height - y),
+    originX,
+    originY,
+    width: Math.min(width, previewImage.width - originX),
+    height: Math.min(height, previewImage.height - originY),
   };
 }
 

@@ -1,4 +1,5 @@
 import {
+  Cancel01Icon,
   GridViewIcon,
   HelpCircleIcon,
   Home01Icon,
@@ -115,6 +116,14 @@ export function AppDrawerContent({ navigation, state }: DrawerContentComponentPr
 
   return (
     <View style={styles.container}>
+      <Pressable onPress={() => navigation.closeDrawer()} style={styles.closeButtonPressable}>
+        {({ pressed }) => (
+          <View style={[styles.closeButton, pressed ? styles.closeButtonPressed : null]}>
+            <HugeiconsIcon color='#FFFFFF' icon={Cancel01Icon} size={26} strokeWidth={2.6} />
+          </View>
+        )}
+      </Pressable>
+
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello,</Text>
         <Text style={styles.name}>Charlie Puth</Text>
@@ -193,6 +202,19 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       paddingRight: spacing.xl,
       paddingBottom: bottomInset > 0 ? bottomInset + spacing.lg : spacing.xl,
       paddingLeft: spacing.xl,
+    },
+    closeButtonPressable: {
+      alignSelf: 'flex-start',
+      borderRadius: radius.pill,
+    },
+    closeButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonPressed: {
+      opacity: 0.85,
     },
     header: {
       marginTop: spacing.xxl,

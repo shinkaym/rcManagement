@@ -81,7 +81,6 @@ function createStyles(theme: AppTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      boxShadow: theme.shadow.lifted,
     },
     cardDashed: {
       borderStyle: 'dashed',

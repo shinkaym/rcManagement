@@ -12,7 +12,7 @@ import { AppTheme } from '@/shared/theme';
 
 type TransactionProgressCardProps = ProgressItem;
 
-export const TransactionProgressCard = memo(function TransactionProgressCard({
+export const TransactionProgressCard = memo(function TransactionProgressCardComponent({
   amount,
   color,
   icon,

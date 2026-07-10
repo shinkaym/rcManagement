@@ -1,7 +1,8 @@
 import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { ListRenderItemInfo } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
@@ -10,57 +11,112 @@ import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import { formatCurrency, getReceiptItemTotal } from '../receipt-item-utils';
+import {
+  createEmptyReceiptItem,
+  formatCurrency,
+  getReceiptItemTotal,
+  moveItemByDirection,
+  sanitizeCurrencyInput,
+  sanitizeIntegerInput,
+} from '../receipt-item-utils';
 import type { ReceiptItemState } from '../receipt-types';
 import { AppTheme } from '@/shared/theme';
 
-const dialogColumnWidths = {
-  actions: 44,
-  name: 188,
-  price: 96,
-  quantity: 84,
-  total: 108,
-} as const;
-
-const dialogTableMinWidth =
-  dialogColumnWidths.name +
-  dialogColumnWidths.quantity +
-  dialogColumnWidths.price +
-  dialogColumnWidths.total +
-  dialogColumnWidths.actions +
-  spacing.xs * 4;
-
 type HugeIcon = typeof Cancel01Icon;
+type ReceiptItemEditableField = keyof Pick<ReceiptItemState, 'name' | 'price' | 'quantity'>;
 
 type ItemsEditDialogProps = {
   isVisible: boolean;
   items: ReceiptItemState[];
-  onAddItem: () => void;
-  onChangeItem: (
-    itemId: string,
-    field: keyof Pick<ReceiptItemState, 'name' | 'price' | 'quantity'>,
-    value: string,
-  ) => void;
   onClose: () => void;
-  onDeleteItem: (itemId: string) => void;
-  onMoveItem: (itemId: string, direction: 'down' | 'up') => void;
-  onSave: () => void;
+  onSave: (items: ReceiptItemState[]) => void;
 };
 
-export function ItemsEditDialog({
+export const ItemsEditDialog = memo(function ItemsEditDialogComponent({
   isVisible,
   items,
-  onAddItem,
-  onChangeItem,
   onClose,
-  onDeleteItem,
-  onMoveItem,
   onSave,
 }: ItemsEditDialogProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets.bottom);
-  const [isHorizontalHintDismissed, setIsHorizontalHintDismissed] = useState(false);
+  const styles = useMemo(() => createStyles(theme, insets.bottom), [insets.bottom, theme]);
+  const [draftItems, setDraftItems] = useState<ReceiptItemState[]>(items);
+
+  useEffect(() => {
+    if (isVisible) {
+      setDraftItems(items.map((item) => ({ ...item })));
+    }
+  }, [isVisible, items]);
+
+  const handleAddItem = useCallback(() => {
+    setDraftItems((currentValue) => [...currentValue, createEmptyReceiptItem()]);
+  }, []);
+
+  const handleChangeItem = useCallback((itemId: string, field: ReceiptItemEditableField, value: string) => {
+    setDraftItems((currentValue) =>
+      currentValue.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        if (field === 'quantity') {
+          return {
+            ...item,
+            quantity: sanitizeIntegerInput(value),
+          };
+        }
+
+        if (field === 'price') {
+          return {
+            ...item,
+            price: sanitizeCurrencyInput(value),
+          };
+        }
+
+        return {
+          ...item,
+          name: value,
+        };
+      }),
+    );
+  }, []);
+
+  const handleDeleteItem = useCallback((itemId: string) => {
+    setDraftItems((currentValue) => currentValue.filter((item) => item.id !== itemId));
+  }, []);
+
+  const handleMoveItem = useCallback((itemId: string, direction: 'down' | 'up') => {
+    setDraftItems((currentValue) => moveItemByDirection(currentValue, itemId, direction));
+  }, []);
+
+  const handleSave = useCallback(() => {
+    const sanitizedItems = draftItems.map((item) => ({
+      ...item,
+      name: item.name.trim() || 'Untitled item',
+      quantity: sanitizeIntegerInput(item.quantity) || '0',
+      price: sanitizeCurrencyInput(item.price) || '0',
+    }));
+
+    onSave(sanitizedItems);
+  }, [draftItems, onSave]);
+
+  const keyExtractor = useCallback((item: ReceiptItemState) => item.id, []);
+
+  const renderItem = useCallback(
+    ({ index, item }: ListRenderItemInfo<ReceiptItemState>) => (
+      <DialogItemRow
+        index={index}
+        item={item}
+        itemCount={draftItems.length}
+        onChangeItem={handleChangeItem}
+        onDeleteItem={handleDeleteItem}
+        onMoveItem={handleMoveItem}
+        styles={styles}
+      />
+    ),
+    [draftItems.length, handleChangeItem, handleDeleteItem, handleMoveItem, styles],
+  );
 
   return (
     <Modal transparent animationType='fade' visible={isVisible} onRequestClose={onClose}>
@@ -72,14 +128,14 @@ export function ItemsEditDialog({
             <View style={styles.dialogTitleBlock}>
               <Text style={styles.dialogTitle}>Edit Items</Text>
               <Text style={styles.dialogSubtitle}>
-                Edit rows directly, then swipe the table sideways if you need more room.
+                Edit each item as a mobile card so long lists stay smooth and easy to tap.
               </Text>
             </View>
 
-            <DialogSurfaceIconButton icon={Cancel01Icon} onPress={onClose} />
+            <DialogSurfaceIconButton icon={Cancel01Icon} onPress={onClose} styles={styles} />
           </View>
 
-          <Pressable onPress={onAddItem} style={styles.addItemPressable}>
+          <Pressable onPress={handleAddItem} style={styles.addItemPressable}>
             {({ pressed }) => (
               <View style={[styles.addItemButton, pressed ? styles.addItemButtonPressed : null]}>
                 <AppIcon icon={Add01Icon} color={staticColors.white} size={18} strokeWidth={1.9} />
@@ -88,92 +144,15 @@ export function ItemsEditDialog({
             )}
           </Pressable>
 
-          {!isHorizontalHintDismissed ? (
-            <Pressable onPress={() => setIsHorizontalHintDismissed(true)} style={styles.horizontalHintPressable}>
-              {({ pressed }) => (
-                <View style={[styles.horizontalHint, pressed ? styles.horizontalHintPressed : null]}>
-                  <Text style={styles.horizontalHintText}>Swipe sideways to see all item columns</Text>
-                </View>
-              )}
-            </Pressable>
-          ) : null}
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalTableContent}
-          >
-            <View style={styles.tableCanvas}>
-              <View style={styles.dialogTableHeader}>
-                <TableHeaderCell label='NAME' width={dialogColumnWidths.name} />
-                <TableHeaderCell centered label='QTY' width={dialogColumnWidths.quantity} />
-                <TableHeaderCell centered label='PRICE' width={dialogColumnWidths.price} />
-                <TableHeaderCell align='right' label='TOTAL' width={dialogColumnWidths.total} />
-                <TableHeaderCell align='center' label='' width={dialogColumnWidths.actions} />
-              </View>
-
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                style={styles.dialogRowsScroll}
-                contentContainerStyle={styles.dialogRowsContent}
-              >
-                {items.map((item, index) => (
-                  <View key={item.id} style={styles.dialogItemRow}>
-                    <View style={[styles.dialogCell, styles.dialogNameColumn]}>
-                      <DialogInput
-                        value={item.name}
-                        onChangeText={(value) => onChangeItem(item.id, 'name', value)}
-                        placeholder='Item name'
-                      />
-                    </View>
-
-                    <View style={[styles.dialogCell, styles.dialogQuantityColumn]}>
-                      <DialogInput
-                        value={item.quantity}
-                        onChangeText={(value) => onChangeItem(item.id, 'quantity', value)}
-                        placeholder='0'
-                        keyboardType='number-pad'
-                        textAlign='center'
-                      />
-                    </View>
-
-                    <View style={[styles.dialogCell, styles.dialogPriceColumn]}>
-                      <DialogInput
-                        value={item.price}
-                        onChangeText={(value) => onChangeItem(item.id, 'price', value)}
-                        placeholder='0.00'
-                        keyboardType='decimal-pad'
-                        textAlign='center'
-                      />
-                    </View>
-
-                    <View style={[styles.dialogCell, styles.dialogTotalColumn]}>
-                      <Text style={styles.dialogItemTotalText}>{formatCurrency(getReceiptItemTotal(item))}</Text>
-                    </View>
-
-                    <View style={[styles.dialogCell, styles.dialogActionsColumn]}>
-                      <IconMiniButton
-                        disabled={index === 0}
-                        icon={ArrowUp01Icon}
-                        onPress={() => onMoveItem(item.id, 'up')}
-                      />
-                      <IconMiniButton
-                        disabled={index === items.length - 1}
-                        icon={ArrowDown01Icon}
-                        onPress={() => onMoveItem(item.id, 'down')}
-                      />
-                      <IconMiniButton
-                        destructive
-                        disabled={items.length <= 1}
-                        icon={Delete02Icon}
-                        onPress={() => onDeleteItem(item.id)}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          </ScrollView>
+          <FlatList
+            data={draftItems}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            keyboardShouldPersistTaps='handled'
+            showsVerticalScrollIndicator={false}
+            style={styles.dialogList}
+            contentContainerStyle={styles.dialogListContent}
+          />
 
           <View style={styles.dialogFooter}>
             <Pressable onPress={onClose} style={styles.dialogFooterSecondaryPressable}>
@@ -189,7 +168,7 @@ export function ItemsEditDialog({
               )}
             </Pressable>
 
-            <Pressable onPress={onSave} style={styles.dialogFooterPrimaryPressable}>
+            <Pressable onPress={handleSave} style={styles.dialogFooterPrimaryPressable}>
               {({ pressed }) => (
                 <View
                   style={[styles.dialogFooterPrimaryButton, pressed ? styles.dialogFooterPrimaryButtonPressed : null]}
@@ -203,25 +182,119 @@ export function ItemsEditDialog({
       </View>
     </Modal>
   );
-}
+});
+
+type DialogItemRowProps = {
+  index: number;
+  item: ReceiptItemState;
+  itemCount: number;
+  onChangeItem: (itemId: string, field: ReceiptItemEditableField, value: string) => void;
+  onDeleteItem: (itemId: string) => void;
+  onMoveItem: (itemId: string, direction: 'down' | 'up') => void;
+  styles: ReturnType<typeof createStyles>;
+};
+
+const DialogItemRow = memo(function DialogItemRowComponent({
+  index,
+  item,
+  itemCount,
+  onChangeItem,
+  onDeleteItem,
+  onMoveItem,
+  styles,
+}: DialogItemRowProps) {
+  const handleChangeName = useCallback((value: string) => onChangeItem(item.id, 'name', value), [item.id, onChangeItem]);
+  const handleChangeQuantity = useCallback(
+    (value: string) => onChangeItem(item.id, 'quantity', value),
+    [item.id, onChangeItem],
+  );
+  const handleChangePrice = useCallback(
+    (value: string) => onChangeItem(item.id, 'price', value),
+    [item.id, onChangeItem],
+  );
+  const handleMoveUp = useCallback(() => onMoveItem(item.id, 'up'), [item.id, onMoveItem]);
+  const handleMoveDown = useCallback(() => onMoveItem(item.id, 'down'), [item.id, onMoveItem]);
+  const handleDelete = useCallback(() => onDeleteItem(item.id), [item.id, onDeleteItem]);
+
+  return (
+    <View style={styles.dialogItemCard}>
+      <View style={styles.dialogItemHeader}>
+        <View style={styles.dialogItemTitleBlock}>
+          <Text style={styles.dialogItemIndex}>ITEM {index + 1}</Text>
+          <Text numberOfLines={1} style={styles.dialogItemNamePreview}>
+            {item.name.trim() || 'Untitled item'}
+          </Text>
+        </View>
+
+        <View style={styles.dialogItemTotalPill}>
+          <Text style={styles.dialogItemTotalLabel}>TOTAL</Text>
+          <Text style={styles.dialogItemTotalText}>{formatCurrency(getReceiptItemTotal(item))}</Text>
+        </View>
+      </View>
+
+      <View style={styles.dialogFieldGroup}>
+        <Text style={styles.dialogFieldLabel}>NAME</Text>
+        <DialogInput value={item.name} onChangeText={handleChangeName} placeholder='Item name' styles={styles} />
+      </View>
+
+      <View style={styles.dialogInlineFields}>
+        <View style={styles.dialogInlineField}>
+          <Text style={styles.dialogFieldLabel}>QTY</Text>
+          <DialogInput
+            value={item.quantity}
+            onChangeText={handleChangeQuantity}
+            placeholder='0'
+            keyboardType='number-pad'
+            textAlign='center'
+            styles={styles}
+          />
+        </View>
+
+        <View style={styles.dialogInlineField}>
+          <Text style={styles.dialogFieldLabel}>PRICE</Text>
+          <DialogInput
+            value={item.price}
+            onChangeText={handleChangePrice}
+            placeholder='0.00'
+            keyboardType='decimal-pad'
+            textAlign='center'
+            styles={styles}
+          />
+        </View>
+      </View>
+
+      <View style={styles.dialogItemActions}>
+        <IconMiniButton disabled={index === 0} icon={ArrowUp01Icon} onPress={handleMoveUp} styles={styles} />
+        <IconMiniButton
+          disabled={index === itemCount - 1}
+          icon={ArrowDown01Icon}
+          onPress={handleMoveDown}
+          styles={styles}
+        />
+        <IconMiniButton destructive disabled={itemCount <= 1} icon={Delete02Icon} onPress={handleDelete} styles={styles} />
+      </View>
+    </View>
+  );
+});
 
 type DialogInputProps = {
   keyboardType?: 'decimal-pad' | 'default' | 'number-pad';
   onChangeText: (value: string) => void;
   placeholder: string;
+  styles: ReturnType<typeof createStyles>;
   textAlign?: 'center' | 'left' | 'right';
   value: string;
 };
 
-function DialogInput({
+const DialogInput = memo(function DialogInputComponent({
   keyboardType = 'default',
   onChangeText,
   placeholder,
+  styles,
   textAlign = 'left',
   value,
 }: DialogInputProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, 0);
 
   return (
     <TextInput
@@ -234,34 +307,20 @@ function DialogInput({
       style={styles.dialogInput}
     />
   );
-}
-
-type TableHeaderCellProps = {
-  align?: 'center' | 'left' | 'right';
-  centered?: boolean;
-  label: string;
-  width: number;
-};
-
-function TableHeaderCell({ align = 'left', centered = false, label, width }: TableHeaderCellProps) {
-  const styles = createStyles(useAppTheme(), 0);
-  const textAlign = centered ? 'center' : align;
-
-  return (
-    <View style={[styles.dialogHeaderCell, { width }]}>
-      <Text style={[styles.dialogTableHeaderText, { textAlign }]}>{label}</Text>
-    </View>
-  );
-}
+});
 
 type DialogSurfaceIconButtonProps = {
   icon: HugeIcon;
   onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
 };
 
-function DialogSurfaceIconButton({ icon, onPress }: DialogSurfaceIconButtonProps) {
+const DialogSurfaceIconButton = memo(function DialogSurfaceIconButtonComponent({
+  icon,
+  onPress,
+  styles,
+}: DialogSurfaceIconButtonProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, 0);
 
   return (
     <Pressable onPress={onPress} style={styles.surfaceIconPressable}>
@@ -272,18 +331,24 @@ function DialogSurfaceIconButton({ icon, onPress }: DialogSurfaceIconButtonProps
       )}
     </Pressable>
   );
-}
+});
 
 type IconMiniButtonProps = {
   destructive?: boolean;
   disabled?: boolean;
   icon: HugeIcon;
   onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
 };
 
-function IconMiniButton({ destructive = false, disabled = false, icon, onPress }: IconMiniButtonProps) {
+const IconMiniButton = memo(function IconMiniButtonComponent({
+  destructive = false,
+  disabled = false,
+  icon,
+  onPress,
+  styles,
+}: IconMiniButtonProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, 0);
   const color = destructive ? theme.colors.danger : theme.colors.secondary;
 
   return (
@@ -301,7 +366,7 @@ function IconMiniButton({ destructive = false, disabled = false, icon, onPress }
       )}
     </Pressable>
   );
-}
+});
 
 function createStyles(theme: AppTheme, bottomInset: number) {
   return StyleSheet.create({
@@ -378,82 +443,79 @@ function createStyles(theme: AppTheme, bottomInset: number) {
       ...typography.titleMedium,
       color: staticColors.white,
     },
-    horizontalHintPressable: {
-      alignSelf: 'flex-start',
-      borderRadius: radius.md,
+    dialogList: {
+      maxHeight: 420,
     },
-    horizontalHint: {
+    dialogListContent: {
+      gap: spacing.sm,
+      paddingBottom: spacing.xs,
+    },
+    dialogItemCard: {
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: theme.colors.borderAlt,
+      backgroundColor: theme.colors.surface,
+      gap: spacing.sm,
+    },
+    dialogItemHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    dialogItemTitleBlock: {
+      flex: 1,
+    },
+    dialogItemIndex: {
+      ...typography.labelLarge,
+      color: theme.colors.textTertiary,
+      letterSpacing: 0.5,
+    },
+    dialogItemNamePreview: {
+      ...typography.titleMedium,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    dialogItemTotalPill: {
+      minWidth: 94,
+      alignItems: 'flex-end',
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
       borderRadius: radius.md,
       borderCurve: 'continuous',
       backgroundColor: 'rgba(245, 124, 0, 0.10)',
     },
-    horizontalHintPressed: {
-      opacity: 0.86,
-    },
-    horizontalHintText: {
-      ...typography.labelLarge,
-      color: theme.colors.secondary,
-      fontFamily: typography.titleMedium.fontFamily,
-    },
-    horizontalTableContent: {
-      paddingBottom: spacing.xs,
-    },
-    tableCanvas: {
-      minWidth: dialogTableMinWidth,
-    },
-    dialogTableHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      paddingBottom: spacing.xs,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(225, 227, 228, 0.9)',
-    },
-    dialogHeaderCell: {
-      justifyContent: 'center',
-    },
-    dialogTableHeaderText: {
+    dialogItemTotalLabel: {
       ...typography.labelLarge,
       color: theme.colors.textTertiary,
-      letterSpacing: 0.5,
+      letterSpacing: 0.4,
     },
-    dialogRowsScroll: {
-      maxHeight: 360,
+    dialogItemTotalText: {
+      ...typography.titleMedium,
+      color: theme.colors.secondary,
+      marginTop: 1,
     },
-    dialogRowsContent: {
-      gap: spacing.sm,
-      paddingTop: spacing.sm,
+    dialogFieldGroup: {
+      gap: spacing.xxs,
     },
-    dialogItemRow: {
+    dialogFieldLabel: {
+      ...typography.labelLarge,
+      color: theme.colors.textTertiary,
+      letterSpacing: 0.4,
+    },
+    dialogInlineFields: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
+      gap: spacing.sm,
     },
-    dialogCell: {
-      justifyContent: 'center',
-    },
-    dialogNameColumn: {
-      width: dialogColumnWidths.name,
-    },
-    dialogQuantityColumn: {
-      width: dialogColumnWidths.quantity,
-    },
-    dialogPriceColumn: {
-      width: dialogColumnWidths.price,
-    },
-    dialogTotalColumn: {
-      width: dialogColumnWidths.total,
-    },
-    dialogActionsColumn: {
-      width: dialogColumnWidths.actions,
-      alignItems: 'center',
+    dialogInlineField: {
+      flex: 1,
       gap: spacing.xxs,
     },
     dialogInput: {
-      minHeight: 38,
-      paddingHorizontal: spacing.sm,
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radius.md,
       borderCurve: 'continuous',
@@ -461,17 +523,18 @@ function createStyles(theme: AppTheme, bottomInset: number) {
       color: theme.colors.textSecondary,
       ...typography.bodyMedium,
     },
-    dialogItemTotalText: {
-      ...typography.bodyMedium,
-      color: theme.colors.textSecondary,
-      textAlign: 'right',
+    dialogItemActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: spacing.xs,
     },
     iconMiniPressable: {
       borderRadius: radius.sm,
     },
     iconMiniButton: {
-      width: 28,
-      height: 28,
+      width: 36,
+      height: 36,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.sm,

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { ChartPoint } from '@/mock/report-data';
@@ -30,7 +30,7 @@ const chartLayout = {
   plotTopPadding: 8,
 };
 
-export function BarChart({
+export const BarChart = memo(function BarChartComponent({
   color,
   height = 220,
   interval,
@@ -41,7 +41,7 @@ export function BarChart({
 }: BarChartProps) {
   const theme = useAppTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const resolvedMaxY = resolveChartMaxY(points, maxY);
   const resolvedInterval = interval ?? resolveChartInterval(resolvedMaxY);
   const baseColor = color ?? theme.colors.primary;
@@ -166,7 +166,7 @@ export function BarChart({
       </ScrollView>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

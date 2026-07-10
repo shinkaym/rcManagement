@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
@@ -11,9 +11,9 @@ type SectionViewMoreProps = {
   onPress: () => void;
 };
 
-export function SectionViewMore({ hiddenCount, onPress }: SectionViewMoreProps) {
+export const SectionViewMore = memo(function SectionViewMoreComponent({ hiddenCount, onPress }: SectionViewMoreProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [lineWidth, setLineWidth] = useState(0);
   const dashCount = Math.max(1, Math.ceil(lineWidth / 10));
 
@@ -34,7 +34,7 @@ export function SectionViewMore({ hiddenCount, onPress }: SectionViewMoreProps) 
       </Pressable>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
@@ -24,7 +24,7 @@ import { AppTheme } from '@/shared/theme';
 
 export function HomeScreen() {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const now = useMemo(() => new Date(), []);
   const homeData = useMemo(() => buildHomeData(now), [now]);
   const calendarRows = useMemo(() => buildCalendarRows(new Date(now.getFullYear(), now.getMonth(), 1)), [now]);
@@ -113,9 +113,9 @@ type CalendarSectionProps = {
   today: Date;
 };
 
-function CalendarSection({ calendarRows, dayAmounts, today }: CalendarSectionProps) {
+const CalendarSection = memo(function CalendarSectionComponent({ calendarRows, dayAmounts, today }: CalendarSectionProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.calendarContainer}>
@@ -140,7 +140,7 @@ function CalendarSection({ calendarRows, dayAmounts, today }: CalendarSectionPro
       </View>
     </View>
   );
-}
+});
 
 type CalendarDayCellProps = {
   amount?: number;
@@ -148,9 +148,9 @@ type CalendarDayCellProps = {
   today: Date;
 };
 
-function CalendarDayCell({ amount, day, today }: CalendarDayCellProps) {
+const CalendarDayCell = memo(function CalendarDayCellComponent({ amount, day, today }: CalendarDayCellProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   if (!day) {
     return <View style={styles.emptyCalendarCell} />;
@@ -171,14 +171,15 @@ function CalendarDayCell({ amount, day, today }: CalendarDayCellProps) {
       ) : null}
     </View>
   );
-}
+});
 
 type TransactionsSectionProps = {
   groups: ReturnType<typeof buildHomeData>['groups'];
 };
 
-function TransactionsSection({ groups }: TransactionsSectionProps) {
-  const styles = createStyles(useAppTheme());
+const TransactionsSection = memo(function TransactionsSectionComponent({ groups }: TransactionsSectionProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View>
@@ -191,16 +192,16 @@ function TransactionsSection({ groups }: TransactionsSectionProps) {
       ))}
     </View>
   );
-}
+});
 
 type TransactionGroupSectionProps = {
   group: ReturnType<typeof buildHomeData>['groups'][number];
   style?: StyleProp<ViewStyle>;
 };
 
-function TransactionGroupSection({ group, style }: TransactionGroupSectionProps) {
+const TransactionGroupSection = memo(function TransactionGroupSectionComponent({ group, style }: TransactionGroupSectionProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [expanded, setExpanded] = useState(false);
   const collapsedItemLimit = 5;
   const total = group.items.reduce((sum, item) => sum + item.total, 0);
@@ -237,7 +238,7 @@ function TransactionGroupSection({ group, style }: TransactionGroupSectionProps)
       ) : null}
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

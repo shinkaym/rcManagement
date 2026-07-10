@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
@@ -30,7 +30,7 @@ const chartTabs = [
 
 export function ReportScreen() {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const now = useMemo(() => new Date(), []);
   const reportData = useMemo(() => buildReportData(now), [now]);
   const [showFloatingButton, setShowFloatingButton] = useState(true);
@@ -142,9 +142,9 @@ type OverviewSectionProps = {
   summaryItems: ReturnType<typeof buildReportData>['overviewItems'];
 };
 
-function OverviewSection({ progressItems, summaryItems }: OverviewSectionProps) {
+const OverviewSection = memo(function OverviewSectionComponent({ progressItems, summaryItems }: OverviewSectionProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View>
@@ -154,14 +154,15 @@ function OverviewSection({ progressItems, summaryItems }: OverviewSectionProps) 
       </View>
     </View>
   );
-}
+});
 
 type OverviewProgressListProps = {
   items: ProgressItem[];
 };
 
-function OverviewProgressList({ items }: OverviewProgressListProps) {
-  const styles = createStyles(useAppTheme());
+const OverviewProgressList = memo(function OverviewProgressListComponent({ items }: OverviewProgressListProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [expanded, setExpanded] = useState(false);
   const collapsedItemLimit = 10;
   const hasMore = items.length > collapsedItemLimit;
@@ -184,14 +185,15 @@ function OverviewProgressList({ items }: OverviewProgressListProps) {
       ) : null}
     </View>
   );
-}
+});
 
 type TransactionsSectionProps = {
   groups: TransactionGroup[];
 };
 
-function TransactionsSection({ groups }: TransactionsSectionProps) {
-  const styles = createStyles(useAppTheme());
+const TransactionsSection = memo(function TransactionsSectionComponent({ groups }: TransactionsSectionProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View>
@@ -204,16 +206,16 @@ function TransactionsSection({ groups }: TransactionsSectionProps) {
       ))}
     </View>
   );
-}
+});
 
 type TransactionGroupSectionProps = {
   group: TransactionGroup;
   style?: StyleProp<ViewStyle>;
 };
 
-function TransactionGroupSection({ group, style }: TransactionGroupSectionProps) {
+const TransactionGroupSection = memo(function TransactionGroupSectionComponent({ group, style }: TransactionGroupSectionProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [expanded, setExpanded] = useState(false);
   const collapsedItemLimit = 5;
   const total = group.items.reduce((sum, item) => sum + item.total, 0);
@@ -250,7 +252,7 @@ function TransactionGroupSection({ group, style }: TransactionGroupSectionProps)
       ) : null}
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

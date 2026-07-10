@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 
@@ -38,7 +38,7 @@ const chartLayout = {
   plotTopPadding: 8,
 };
 
-export function LineChart({
+export const LineChart = memo(function LineChartComponent({
   height = 220,
   interval,
   lineColor,
@@ -49,7 +49,7 @@ export function LineChart({
 }: LineChartProps) {
   const theme = useAppTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const resolvedMaxY = resolveChartMaxY(points, maxY);
   const resolvedInterval = interval ?? resolveChartInterval(resolvedMaxY);
   const strokeColor = lineColor ?? theme.colors.primary;
@@ -200,7 +200,7 @@ export function LineChart({
       </ScrollView>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

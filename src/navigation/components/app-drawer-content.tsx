@@ -63,7 +63,7 @@ type DrawerMenuItemProps = {
   styles: ReturnType<typeof createStyles>;
 };
 
-const DrawerMenuItem = memo(function DrawerMenuItem({
+const DrawerMenuItem = memo(function DrawerMenuItemComponent({
   icon,
   isSelected,
   itemKey,
@@ -83,7 +83,7 @@ const DrawerMenuItem = memo(function DrawerMenuItem({
   );
 });
 
-export const AppDrawerContent = memo(function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDrawerContentProps) {
+export const AppDrawerContent = memo(function AppDrawerContentComponent({ activeItemKey, onClose, onNavigate }: AppDrawerContentProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, insets.top, insets.bottom), [insets.bottom, insets.top, theme]);

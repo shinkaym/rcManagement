@@ -34,6 +34,6 @@ export const palette = {
 export const staticColors = {
   white: '#FFFFFF',
   black: '#000000',
-  grey: '#6B7280',
+  grey: '#BEBEBE',
   transparent: 'transparent',
 } as const;

@@ -55,7 +55,6 @@ function createStyles(theme: AppTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      boxShadow: theme.shadow.lifted,
     },
     cardPressed: {
       opacity: 0.9,

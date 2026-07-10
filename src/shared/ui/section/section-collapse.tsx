@@ -1,7 +1,7 @@
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
@@ -17,14 +17,14 @@ type SectionCollapseProps = {
   title: string;
 };
 
-export function SectionCollapse({
+export const SectionCollapse = memo(function SectionCollapseComponent({
   child,
   contentSpacing = spacing.sm,
   initiallyExpanded = true,
   title,
 }: SectionCollapseProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, contentSpacing);
+  const styles = useMemo(() => createStyles(theme, contentSpacing), [contentSpacing, theme]);
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const rotateValue = useRef(new Animated.Value(initiallyExpanded ? 1 : 0)).current;
 
@@ -57,7 +57,7 @@ export function SectionCollapse({
       {expanded ? <View style={styles.content}>{child}</View> : null}
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme, contentSpacing: number) {
   return StyleSheet.create({

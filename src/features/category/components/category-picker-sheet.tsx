@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from 'react';
 import { AppIcon } from '@/shared/ui/icon';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,10 +24,15 @@ type CategoryPickerSheetProps = {
   selectedCategoryId?: string;
 };
 
-export function CategoryPickerSheet({ isVisible, onClose, onSelect, selectedCategoryId }: CategoryPickerSheetProps) {
+export const CategoryPickerSheet = memo(function CategoryPickerSheetComponent({
+  isVisible,
+  onClose,
+  onSelect,
+  selectedCategoryId,
+}: CategoryPickerSheetProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets.bottom);
+  const styles = useMemo(() => createStyles(theme, insets.bottom), [insets.bottom, theme]);
 
   return (
     <Modal animationType='fade' transparent visible={isVisible} onRequestClose={onClose}>
@@ -63,7 +69,7 @@ export function CategoryPickerSheet({ isVisible, onClose, onSelect, selectedCate
       </View>
     </Modal>
   );
-}
+});
 
 type CategoryPickerSectionProps = {
   items: CategoryItem[];
@@ -72,8 +78,14 @@ type CategoryPickerSectionProps = {
   title: string;
 };
 
-function CategoryPickerSection({ items, onSelect, selectedCategoryId, title }: CategoryPickerSectionProps) {
-  const styles = createStyles(useAppTheme(), 0);
+const CategoryPickerSection = memo(function CategoryPickerSectionComponent({
+  items,
+  onSelect,
+  selectedCategoryId,
+  title,
+}: CategoryPickerSectionProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme, 0), [theme]);
 
   return (
     <View style={styles.section}>
@@ -84,27 +96,34 @@ function CategoryPickerSection({ items, onSelect, selectedCategoryId, title }: C
             key={item.id}
             category={item}
             isSelected={item.id === selectedCategoryId}
-            onPress={() => onSelect(item)}
+            onPressCategory={onSelect}
           />
         ))}
       </View>
     </View>
   );
-}
+});
 
 type CategoryOptionCardProps = {
   category: CategoryItem;
   isSelected: boolean;
-  onPress: () => void;
+  onPressCategory: (category: CategoryItem) => void;
 };
 
-function CategoryOptionCard({ category, isSelected, onPress }: CategoryOptionCardProps) {
+const CategoryOptionCard = memo(function CategoryOptionCardComponent({
+  category,
+  isSelected,
+  onPressCategory,
+}: CategoryOptionCardProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme, 0);
+  const styles = useMemo(() => createStyles(theme, 0), [theme]);
   const iconPreset = categoryIconCatalog[category.iconKey];
+  const handlePress = useCallback(() => {
+    onPressCategory(category);
+  }, [category, onPressCategory]);
 
   return (
-    <Pressable onPress={onPress} style={styles.cardPressable}>
+    <Pressable onPress={handlePress} style={styles.cardPressable}>
       {({ pressed }) => (
         <View style={[styles.card, isSelected ? styles.cardSelected : null, pressed ? styles.cardPressed : null]}>
           <View style={[styles.iconBadge, { backgroundColor: toSoftColor(category.colorValue) }]}>
@@ -118,7 +137,7 @@ function CategoryOptionCard({ category, isSelected, onPress }: CategoryOptionCar
       )}
     </Pressable>
   );
-}
+});
 
 function createStyles(theme: AppTheme, bottomInset: number) {
   return StyleSheet.create({

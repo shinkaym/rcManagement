@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { AppIcon } from '@/shared/ui/icon';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
@@ -21,7 +21,14 @@ type TransactionCardProps = {
   total: number;
 };
 
-export function TransactionCard({ icon, note, style, time, title, total }: TransactionCardProps) {
+export const TransactionCard = memo(function TransactionCardComponent({
+  icon,
+  note,
+  style,
+  time,
+  title,
+  total,
+}: TransactionCardProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -49,7 +56,7 @@ export function TransactionCard({ icon, note, style, time, title, total }: Trans
       <Text style={styles.total}>{formatCurrency(total, 0)}</Text>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

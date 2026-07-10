@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -13,9 +14,9 @@ type CategoryBadgeProps = {
   onPress?: () => void;
 };
 
-export function CategoryBadge({ category, onPress }: CategoryBadgeProps) {
+export const CategoryBadge = memo(function CategoryBadgeComponent({ category, onPress }: CategoryBadgeProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const iconPreset = categoryIconCatalog[category.iconKey];
 
   const badgeContent = (
@@ -33,7 +34,7 @@ export function CategoryBadge({ category, onPress }: CategoryBadgeProps) {
       {({ pressed }) => <View style={pressed ? styles.badgePressed : null}>{badgeContent}</View>}
     </Pressable>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

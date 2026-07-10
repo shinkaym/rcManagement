@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -17,9 +17,13 @@ type DonutChartProps = {
   legendLimit?: number;
 };
 
-export function DonutChart({ chartSize = 124, items, legendLimit = 5 }: DonutChartProps) {
+export const DonutChart = memo(function DonutChartComponent({
+  chartSize = 124,
+  items,
+  legendLimit = 5,
+}: DonutChartProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const total = items.reduce((sum, item) => sum + item.value, 0);
   const legendItems = items.slice(0, legendLimit);
   const placeholders = Math.max(0, legendLimit - legendItems.length);
@@ -81,7 +85,7 @@ export function DonutChart({ chartSize = 124, items, legendLimit = 5 }: DonutCha
       </View>
     </View>
   );
-}
+});
 
 type LegendRowProps = {
   color: string;
@@ -89,9 +93,9 @@ type LegendRowProps = {
   percentage: number;
 };
 
-function LegendRow({ color, label, percentage }: LegendRowProps) {
+const LegendRow = memo(function LegendRowComponent({ color, label, percentage }: LegendRowProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.legendRow}>
@@ -102,11 +106,11 @@ function LegendRow({ color, label, percentage }: LegendRowProps) {
       <Text style={styles.legendValue}>{percentage.toFixed(2)}%</Text>
     </View>
   );
-}
+});
 
-function LegendPlaceholderRow() {
+const LegendPlaceholderRow = memo(function LegendPlaceholderRowComponent() {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.legendRow}>
@@ -115,7 +119,7 @@ function LegendPlaceholderRow() {
       <Text style={styles.legendPlaceholderValue}>0.00%</Text>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Home01Icon } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -20,9 +21,9 @@ type SegmentTabsProps<T> = {
   selectedValue: T;
 };
 
-export function SegmentTabs<T>({ items, onChange, selectedValue }: SegmentTabsProps<T>) {
+function SegmentTabsComponent<T>({ items, onChange, selectedValue }: SegmentTabsProps<T>) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.container}>
@@ -56,6 +57,8 @@ export function SegmentTabs<T>({ items, onChange, selectedValue }: SegmentTabsPr
     </View>
   );
 }
+
+export const SegmentTabs = memo(SegmentTabsComponent) as typeof SegmentTabsComponent;
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

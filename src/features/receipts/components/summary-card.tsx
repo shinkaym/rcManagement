@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
@@ -11,9 +12,9 @@ type SummaryCardProps = {
   label: string;
 };
 
-export function SummaryCard({ amount, label }: SummaryCardProps) {
+export const SummaryCard = memo(function SummaryCardComponent({ amount, label }: SummaryCardProps) {
   const theme = useAppTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.container}>
@@ -21,7 +22,7 @@ export function SummaryCard({ amount, label }: SummaryCardProps) {
       <Text style={styles.amount}>{amount}</Text>
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({

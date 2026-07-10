@@ -3,6 +3,6 @@ import { memo, type ComponentProps } from 'react';
 
 export type AppIconProps = ComponentProps<typeof HugeiconsIcon>;
 
-export const AppIcon = memo(function AppIcon(props: AppIconProps) {
+export const AppIcon = memo(function AppIconComponent(props: AppIconProps) {
   return <HugeiconsIcon {...props} />;
 });

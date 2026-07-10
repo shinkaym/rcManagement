@@ -9,7 +9,7 @@ import {
   Store04Icon,
 } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
-import { useMemo, useState, type ReactNode } from 'react';
+import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,14 +25,11 @@ import { typography } from '@/shared/theme/tokens/typography';
 
 import { ItemsEditDialog } from '../../features/receipts/components/items-edit-dialog';
 import {
-  createEmptyReceiptItem,
   formatCurrency,
   getReceiptItemTotal,
   initialReceiptItems,
-  moveItemByDirection,
   parseCurrencyValue,
   sanitizeCurrencyInput,
-  sanitizeIntegerInput,
 } from '../../features/receipts/receipt-item-utils';
 import type { ReceiptItemState } from '../../features/receipts/receipt-types';
 import { AppTheme } from '@/shared/theme';
@@ -82,7 +79,6 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     lastFourDigits: '4224',
   });
   const [items, setItems] = useState<ReceiptItemState[]>(initialReceiptItems);
-  const [itemDrafts, setItemDrafts] = useState<ReceiptItemState[]>(initialReceiptItems);
   const [isItemsDialogVisible, setIsItemsDialogVisible] = useState(false);
   const [note, setNote] = useState('Fill up');
   const [totals, setTotals] = useState<TotalsFormState>({
@@ -140,73 +136,18 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     });
   }
 
-  function handleOpenItemsDialog() {
-    setItemDrafts(items.map((item) => ({ ...item })));
+  const handleOpenItemsDialog = useCallback(() => {
     setIsItemsDialogVisible(true);
-  }
+  }, []);
 
-  function handleCloseItemsDialog() {
+  const handleCloseItemsDialog = useCallback(() => {
     setIsItemsDialogVisible(false);
-    setItemDrafts(items.map((item) => ({ ...item })));
-  }
+  }, []);
 
-  function handleSaveItemsDialog() {
-    const sanitizedItems = itemDrafts.map((item) => ({
-      ...item,
-      name: item.name.trim() || 'Untitled item',
-      quantity: sanitizeIntegerInput(item.quantity) || '0',
-      price: sanitizeCurrencyInput(item.price) || '0',
-    }));
-
-    setItems(sanitizedItems);
-    setItemDrafts(sanitizedItems.map((item) => ({ ...item })));
+  const handleSaveItemsDialog = useCallback((nextItems: ReceiptItemState[]) => {
+    setItems(nextItems);
     setIsItemsDialogVisible(false);
-  }
-
-  function handleItemDraftChange(
-    itemId: string,
-    field: keyof Pick<ReceiptItemState, 'name' | 'price' | 'quantity'>,
-    value: string,
-  ) {
-    setItemDrafts((currentValue) =>
-      currentValue.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
-
-        if (field === 'quantity') {
-          return {
-            ...item,
-            quantity: sanitizeIntegerInput(value),
-          };
-        }
-
-        if (field === 'price') {
-          return {
-            ...item,
-            price: sanitizeCurrencyInput(value),
-          };
-        }
-
-        return {
-          ...item,
-          name: value,
-        };
-      }),
-    );
-  }
-
-  function handleDeleteItemDraft(itemId: string) {
-    setItemDrafts((currentValue) => currentValue.filter((item) => item.id !== itemId));
-  }
-
-  function handleMoveItemDraft(itemId: string, direction: 'down' | 'up') {
-    setItemDrafts((currentValue) => moveItemByDirection(currentValue, itemId, direction));
-  }
-
-  function handleAddItemDraft() {
-    setItemDrafts((currentValue) => [...currentValue, createEmptyReceiptItem()]);
-  }
+  }, []);
 
   function handleSelectMerchantCategory(category: CategoryItem) {
     setMerchantCategory(category);
@@ -458,13 +399,9 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
         </View>
 
         <ItemsEditDialog
-          items={itemDrafts}
+          items={items}
           isVisible={isItemsDialogVisible}
-          onAddItem={handleAddItemDraft}
-          onChangeItem={handleItemDraftChange}
           onClose={handleCloseItemsDialog}
-          onDeleteItem={handleDeleteItemDraft}
-          onMoveItem={handleMoveItemDraft}
           onSave={handleSaveItemsDialog}
         />
 
@@ -483,11 +420,11 @@ type SectionCardProps = {
   children: ReactNode;
 };
 
-function SectionCard({ children }: SectionCardProps) {
+const SectionCard = memo(function SectionCardComponent({ children }: SectionCardProps) {
   const styles = createStyles(useAppTheme(), 0, 0);
 
   return <View style={styles.sectionCard}>{children}</View>;
-}
+});
 
 type SectionHeaderProps = {
   icon: HugeIcon;
@@ -495,7 +432,7 @@ type SectionHeaderProps = {
   trailing?: ReactNode;
 };
 
-function SectionHeader({ icon, title, trailing }: SectionHeaderProps) {
+const SectionHeader = memo(function SectionHeaderComponent({ icon, title, trailing }: SectionHeaderProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
 
@@ -509,7 +446,7 @@ function SectionHeader({ icon, title, trailing }: SectionHeaderProps) {
       {trailing ? <View style={styles.sectionHeaderTrailing}>{trailing}</View> : null}
     </View>
   );
-}
+});
 
 type SectionEditButtonProps = {
   disabled?: boolean;
@@ -517,7 +454,11 @@ type SectionEditButtonProps = {
   onPress: () => void;
 };
 
-function SectionEditButton({ disabled = false, label, onPress }: SectionEditButtonProps) {
+const SectionEditButton = memo(function SectionEditButtonComponent({
+  disabled = false,
+  label,
+  onPress,
+}: SectionEditButtonProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
 
@@ -542,14 +483,14 @@ function SectionEditButton({ disabled = false, label, onPress }: SectionEditButt
       )}
     </Pressable>
   );
-}
+});
 
 type MerchantDateFieldProps = {
   onPress: () => void;
   value: string;
 };
 
-function MerchantDateField({ onPress, value }: MerchantDateFieldProps) {
+const MerchantDateField = memo(function MerchantDateFieldComponent({ onPress, value }: MerchantDateFieldProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
 
@@ -563,14 +504,14 @@ function MerchantDateField({ onPress, value }: MerchantDateFieldProps) {
       )}
     </Pressable>
   );
-}
+});
 
 type DisplayFieldProps = {
   label: string;
   value: string;
 };
 
-function DisplayField({ label, value }: DisplayFieldProps) {
+const DisplayField = memo(function DisplayFieldComponent({ label, value }: DisplayFieldProps) {
   const styles = createStyles(useAppTheme(), 0, 0);
 
   return (
@@ -579,7 +520,7 @@ function DisplayField({ label, value }: DisplayFieldProps) {
       <Text style={styles.fieldValue}>{value}</Text>
     </View>
   );
-}
+});
 
 type ReceiptInputProps = {
   keyboardType?: 'decimal-pad' | 'default' | 'number-pad';
@@ -589,7 +530,7 @@ type ReceiptInputProps = {
   value: string;
 };
 
-function ReceiptInput({
+const ReceiptInput = memo(function ReceiptInputComponent({
   keyboardType = 'default',
   multiline = false,
   onChangeText,
@@ -611,7 +552,7 @@ function ReceiptInput({
       style={[styles.receiptInput, multiline ? styles.receiptInputMultiline : null]}
     />
   );
-}
+});
 
 type EditableTotalRowProps = {
   isEditing: boolean;
@@ -622,7 +563,7 @@ type EditableTotalRowProps = {
   value: string;
 };
 
-function EditableTotalRow({
+const EditableTotalRow = memo(function EditableTotalRowComponent({
   isEditing,
   isNegative = false,
   label,
@@ -667,7 +608,7 @@ function EditableTotalRow({
       )}
     </View>
   );
-}
+});
 
 function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({
@@ -708,7 +649,6 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
       borderWidth: 1,
       borderColor: 'rgba(225, 227, 228, 0.9)',
       backgroundColor: theme.colors.surface,
-      boxShadow: theme.shadow.popover,
       gap: spacing.md,
     },
     merchantGlow: {

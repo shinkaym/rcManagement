@@ -1,4 +1,3 @@
-import { DrawerActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import { EmployeeScreen } from '@/screens/employee/employee-screen';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 
 import { MainHeader } from '../components/main-header';
+import { useShellDrawer } from '../components/shell-drawer-context';
 import { SubHeader } from '../components/sub-header';
 import type { EmployeeStackParamList } from '../navigation-types';
 import { EMPLOYEE_ROUTES } from '../route-names';
@@ -28,10 +28,11 @@ function EmployeeRouteScreen({
 }: NativeStackScreenProps<EmployeeStackParamList, typeof EMPLOYEE_ROUTES.EMPLOYEE>) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { toggleDrawer } = useShellDrawer();
 
   return (
     <View style={styles.screen}>
-      <MainHeader title='Employee' onMenuPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />
+      <MainHeader title='Employee' onMenuPress={toggleDrawer} />
       <View style={styles.content}>
         <EmployeeScreen
           onCreateEmployee={() => navigation.navigate(EMPLOYEE_ROUTES.EMPLOYEE_DETAIL, { mode: 'create' })}

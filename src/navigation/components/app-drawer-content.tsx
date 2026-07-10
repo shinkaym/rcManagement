@@ -5,14 +5,13 @@ import {
   Home01Icon,
   InformationCircleIcon,
   MapsIcon,
+  ScanImageIcon,
   ReceiptTextIcon,
   Settings02Icon,
   UserAccountIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import type { DrawerContentComponentProps } from '@react-navigation/drawer';
-import type { NavigationState, ParamListBase, PartialState } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,10 +20,9 @@ import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import { CATEGORY_ROUTES, DRAWER_ROUTES, EMPLOYEE_ROUTES, HOME_ROUTES, REPORT_ROUTES, SETTING_ROUTES, TAB_ROUTES } from '../route-names';
-
-type DrawerItemKey =
+export type DrawerItemKey =
   | 'home'
+  | 'scan'
   | 'report'
   | 'category'
   | 'employee'
@@ -36,6 +34,7 @@ type DrawerItemKey =
 
 const drawerItems: Array<{ icon: typeof Home01Icon; key: DrawerItemKey; label: string }> = [
   { key: 'home', label: 'Home', icon: Home01Icon },
+  { key: 'scan', label: 'Scan Image', icon: ScanImageIcon },
   { key: 'report', label: 'Report', icon: ReceiptTextIcon },
   { key: 'category', label: 'Category', icon: GridViewIcon },
   { key: 'employee', label: 'Employee', icon: UserGroupIcon },
@@ -46,77 +45,20 @@ const drawerItems: Array<{ icon: typeof Home01Icon; key: DrawerItemKey; label: s
   { key: 'aboutUs', label: 'About Us', icon: InformationCircleIcon },
 ];
 
-export function AppDrawerContent({ navigation, state }: DrawerContentComponentProps) {
+type AppDrawerContentProps = {
+  activeItemKey: DrawerItemKey | null;
+  onClose: () => void;
+  onNavigate: (itemKey: DrawerItemKey) => void;
+};
+
+export function AppDrawerContent({ activeItemKey, onClose, onNavigate }: AppDrawerContentProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
-  const activeItemKey = getActiveDrawerItemKey(state);
-
-  function navigateTo(itemKey: DrawerItemKey) {
-    switch (itemKey) {
-      case 'home':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.HOME_STACK,
-          params: { screen: HOME_ROUTES.HOME },
-        });
-        break;
-      case 'report':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.REPORT_STACK,
-          params: { screen: REPORT_ROUTES.REPORT },
-        });
-        break;
-      case 'category':
-        navigation.navigate(DRAWER_ROUTES.CATEGORY_STACK, {
-          screen: CATEGORY_ROUTES.CATEGORY,
-        });
-        break;
-      case 'employee':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.EMPLOYEE_STACK,
-          params: { screen: EMPLOYEE_ROUTES.EMPLOYEE },
-        });
-        break;
-      case 'myAccount':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.SETTING_STACK,
-          params: { screen: SETTING_ROUTES.MY_ACCOUNT },
-        });
-        break;
-      case 'setting':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.SETTING_STACK,
-          params: { screen: SETTING_ROUTES.SETTING },
-        });
-        break;
-      case 'map':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.SETTING_STACK,
-          params: { screen: SETTING_ROUTES.MAP },
-        });
-        break;
-      case 'help':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.SETTING_STACK,
-          params: { screen: SETTING_ROUTES.HELP },
-        });
-        break;
-      case 'aboutUs':
-        navigation.navigate(DRAWER_ROUTES.MAIN_TABS, {
-          screen: TAB_ROUTES.SETTING_STACK,
-          params: { screen: SETTING_ROUTES.ABOUT_US },
-        });
-        break;
-      default:
-        break;
-    }
-
-    navigation.closeDrawer();
-  }
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={() => navigation.closeDrawer()} style={styles.closeButtonPressable}>
+      <Pressable onPress={onClose} style={styles.closeButtonPressable}>
         {({ pressed }) => (
           <View style={[styles.closeButton, pressed ? styles.closeButtonPressed : null]}>
             <HugeiconsIcon color='#FFFFFF' icon={Cancel01Icon} size={26} strokeWidth={2.6} />
@@ -139,7 +81,7 @@ export function AppDrawerContent({ navigation, state }: DrawerContentComponentPr
           const isSelected = item.key === activeItemKey;
 
           return (
-            <Pressable key={item.key} onPress={() => navigateTo(item.key)} style={styles.itemPressable}>
+            <Pressable key={item.key} onPress={() => onNavigate(item.key)} style={styles.itemPressable}>
               {({ pressed }) => (
                 <View style={[styles.item, isSelected ? styles.itemSelected : null, pressed ? styles.itemPressed : null]}>
                   <HugeiconsIcon color='#FFFFFF' icon={item.icon} size={18} strokeWidth={2.4} />
@@ -154,45 +96,6 @@ export function AppDrawerContent({ navigation, state }: DrawerContentComponentPr
   );
 }
 
-function getActiveDrawerItemKey(state: DrawerContentComponentProps['state']): DrawerItemKey | null {
-  const activeLeafName = getActiveRouteName(state);
-
-  switch (activeLeafName) {
-    case HOME_ROUTES.HOME:
-      return 'home';
-    case REPORT_ROUTES.REPORT:
-      return 'report';
-    case CATEGORY_ROUTES.CATEGORY:
-      return 'category';
-    case EMPLOYEE_ROUTES.EMPLOYEE:
-    case EMPLOYEE_ROUTES.EMPLOYEE_DETAIL:
-      return 'employee';
-    case SETTING_ROUTES.SETTING:
-      return 'setting';
-    case SETTING_ROUTES.MY_ACCOUNT:
-      return 'myAccount';
-    case SETTING_ROUTES.MAP:
-      return 'map';
-    case SETTING_ROUTES.HELP:
-      return 'help';
-    case SETTING_ROUTES.ABOUT_US:
-      return 'aboutUs';
-    default:
-      return null;
-  }
-}
-
-function getActiveRouteName(state: NavigationState<ParamListBase> | PartialState<NavigationState<ParamListBase>>): string {
-  const route = state.routes[state.index ?? 0];
-  const nestedState = route.state as NavigationState<ParamListBase> | PartialState<NavigationState<ParamListBase>> | undefined;
-
-  if (nestedState) {
-    return getActiveRouteName(nestedState);
-  }
-
-  return route.name;
-}
-
 function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     container: {
@@ -200,7 +103,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
       backgroundColor: theme.colors.secondary,
       paddingTop: topInset > 0 ? topInset + spacing.md : spacing.xl,
       paddingRight: spacing.xl,
-      paddingBottom: bottomInset > 0 ? bottomInset + spacing.lg : spacing.xl,
+      paddingBottom: bottomInset > 0 ? bottomInset + spacing.xl : spacing.xl,
       paddingLeft: spacing.xl,
     },
     closeButtonPressable: {
@@ -237,6 +140,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, topInset: number, b
     listContent: {
       paddingRight: spacing.lg,
       gap: spacing.xs,
+      paddingBottom: spacing.lg,
     },
     itemPressable: {
       borderRadius: radius.md,

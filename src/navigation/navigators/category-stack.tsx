@@ -1,4 +1,3 @@
-import { DrawerActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
@@ -6,6 +5,7 @@ import { CategoryScreen } from '@/screens/category/category-screen';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 
 import { MainHeader } from '../components/main-header';
+import { useShellDrawer } from '../components/shell-drawer-context';
 import type { CategoryStackParamList } from '../navigation-types';
 import { CATEGORY_ROUTES } from '../route-names';
 
@@ -19,13 +19,14 @@ export function CategoryStackNavigator() {
   );
 }
 
-function CategoryRouteScreen({ navigation }: { navigation: any }) {
+function CategoryRouteScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { toggleDrawer } = useShellDrawer();
 
   return (
     <View style={styles.screen}>
-      <MainHeader title='Category' onMenuPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />
+      <MainHeader title='Category' onMenuPress={toggleDrawer} />
       <View style={styles.content}>
         <CategoryScreen />
       </View>

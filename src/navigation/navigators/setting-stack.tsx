@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { DrawerActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
@@ -9,6 +8,7 @@ import { SettingScreen, type SettingDestination } from '@/screens/setting/settin
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 
 import { MainHeader } from '../components/main-header';
+import { useShellDrawer } from '../components/shell-drawer-context';
 import { SubHeader } from '../components/sub-header';
 import type { SettingStackParamList } from '../navigation-types';
 import { SETTING_ROUTES } from '../route-names';
@@ -32,6 +32,7 @@ function SettingRouteScreen({
 }: NativeStackScreenProps<SettingStackParamList, typeof SETTING_ROUTES.SETTING>) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const { toggleDrawer } = useShellDrawer();
 
   function handleSelectDestination(destination: SettingDestination) {
     navigation.navigate(destination);
@@ -39,7 +40,7 @@ function SettingRouteScreen({
 
   return (
     <View style={styles.screen}>
-      <MainHeader title='Setting' onMenuPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />
+      <MainHeader title='Setting' onMenuPress={toggleDrawer} />
       <View style={styles.content}>
         <SettingScreen onSelectDestination={handleSelectDestination} />
       </View>

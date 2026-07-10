@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { ChartPoint } from '@/mock/report-data';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
@@ -40,25 +40,23 @@ export function BarChart({
   visiblePointCount = 7,
 }: BarChartProps) {
   const theme = useAppTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const styles = createStyles(theme);
-  const [containerWidth, setContainerWidth] = useState(0);
   const resolvedMaxY = resolveChartMaxY(points, maxY);
   const resolvedInterval = interval ?? resolveChartInterval(resolvedMaxY);
   const baseColor = color ?? theme.colors.primary;
   const svgHeight = height - chartLayout.outerTopPadding - chartLayout.outerBottomPadding;
   const plotHeight = svgHeight - chartLayout.plotTopPadding - chartLayout.bottomAxisHeight;
   const fallbackPlotWidth = visiblePointCount * 44;
-  const availablePlotWidth =
-    containerWidth > 0
-      ? Math.max(
-          containerWidth -
-            chartLayout.outerLeftPadding -
-            chartLayout.outerRightPadding -
-            chartLayout.axisLabelWidth -
-            chartLayout.canvasRightPadding,
-          0,
-        )
-      : fallbackPlotWidth;
+  const availablePlotWidth = Math.max(
+    windowWidth -
+      spacing.lg * 2 -
+      chartLayout.outerLeftPadding -
+      chartLayout.outerRightPadding -
+      chartLayout.axisLabelWidth -
+      chartLayout.canvasRightPadding,
+    fallbackPlotWidth,
+  );
   const minimumPlotWidth =
     points.length <= visiblePointCount ? availablePlotWidth : Math.max(availablePlotWidth, points.length * 44);
   const svgWidth = chartLayout.axisLabelWidth + minimumPlotWidth + chartLayout.canvasRightPadding;
@@ -81,10 +79,7 @@ export function BarChart({
   }, [resolvedInterval, resolvedMaxY]);
 
   return (
-    <View
-      style={[styles.container, { height }]}
-      onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
-    >
+    <View style={[styles.container, { height }]}>
       <ScrollView
         horizontal
         bounces={false}

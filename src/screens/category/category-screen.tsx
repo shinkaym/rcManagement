@@ -1,21 +1,21 @@
 import { Settings02Icon } from '@hugeicons/core-free-icons';
-import { AppIcon } from '@/shared/ui/icon';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
+import { ActionCard } from '@/features/category/components/action-card';
+import { CategoryCard } from '@/features/category/components/category-card';
+import { ColorOptionButton } from '@/features/category/components/color-option-button';
+import { IconOptionButton } from '@/features/category/components/icon-option-button';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { staticColors } from '@/shared/theme/tokens/colors';
-import { createFocusRingShadow } from '@/shared/theme/tokens/shadow';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import { isValidHexColor, normalizeHexColor, toSoftColor } from '@/shared/utils/color';
+import { isValidHexColor, normalizeHexColor } from '@/shared/utils/color';
 import {
   categoryColorPresets,
-  categoryIconCatalog,
   categoryIconGroups,
   customCategorySeed,
   defaultCategorySeed,
@@ -61,15 +61,15 @@ export function CategoryScreen() {
     }).start();
   }, [sheetAnimation, sheetVisible]);
 
-  function openCreateSheet() {
+  const openCreateSheet = useCallback(() => {
     setDraftName('');
     setDraftColorValue('#F57C00');
     setDraftIconKey('food');
     setIsCustomPickerOpen(false);
     setSheetState({ mode: 'create' });
-  }
+  }, []);
 
-  function openEditSheet(category: CategoryItem, source: EditableSource) {
+  const openEditSheet = useCallback((category: CategoryItem, source: EditableSource) => {
     setDraftName(category.label);
     setDraftColorValue(category.colorValue);
     setDraftIconKey(category.iconKey);
@@ -79,7 +79,37 @@ export function CategoryScreen() {
       source,
       categoryId: category.id,
     });
-  }
+  }, []);
+
+  const openDefaultEditSheet = useCallback(
+    (category: CategoryItem) => {
+      openEditSheet(category, 'default');
+    },
+    [openEditSheet],
+  );
+
+  const openCustomEditSheet = useCallback(
+    (category: CategoryItem) => {
+      openEditSheet(category, 'custom');
+    },
+    [openEditSheet],
+  );
+
+  const handleSelectColorPreset = useCallback((colorValue: string) => {
+    setDraftColorValue(colorValue);
+    setIsCustomPickerOpen(false);
+  }, []);
+
+  const handleSelectIcon = useCallback((iconKey: CategoryIconKey) => {
+    setDraftIconKey(iconKey);
+  }, []);
+
+  const handleEditPlaceholderPress = useCallback(() => {
+    Alert.alert(
+      'Edit button',
+      'This temporary tile is only here as a visual placeholder for the separate edit entry.',
+    );
+  }, []);
 
   function closeSheet() {
     setSheetState(null);
@@ -147,14 +177,14 @@ export function CategoryScreen() {
             <CategorySection
               items={defaultCategories}
               title='Default List'
-              onItemPress={(item) => openEditSheet(item, 'default')}
+              onItemPress={openDefaultEditSheet}
             />
 
             <View style={styles.sectionSpacer}>
               <Text style={styles.sectionTitle}>Custom List</Text>
               <View style={styles.grid}>
                 {customCategories.map((item) => (
-                  <CategoryCard key={item.id} item={item} onPress={() => openEditSheet(item, 'custom')} />
+                  <CategoryCard key={item.id} item={item} onPressItem={openCustomEditSheet} />
                 ))}
 
                 <ActionCard imageSource={addImageSource} label='Create' variant='dashed' onPress={openCreateSheet} />
@@ -163,12 +193,7 @@ export function CategoryScreen() {
                   icon={Settings02Icon}
                   label='Edit'
                   variant='edit'
-                  onPress={() =>
-                    Alert.alert(
-                      'Edit button',
-                      'This temporary tile is only here as a visual placeholder for the separate edit entry.',
-                    )
-                  }
+                  onPress={handleEditPlaceholderPress}
                 />
               </View>
             </View>
@@ -219,10 +244,7 @@ export function CategoryScreen() {
                         key={colorValue}
                         colorValue={colorValue}
                         isSelected={normalizedDraftColor === colorValue}
-                        onPress={() => {
-                          setDraftColorValue(colorValue);
-                          setIsCustomPickerOpen(false);
-                        }}
+                        onPressColor={handleSelectColorPreset}
                       />
                     ))}
                   </View>
@@ -271,7 +293,7 @@ export function CategoryScreen() {
                           accentColorValue={normalizedDraftColor}
                           iconKey={iconKey}
                           isSelected={draftIconKey === iconKey}
-                          onPress={() => setDraftIconKey(iconKey)}
+                          onPressIcon={handleSelectIcon}
                         />
                       ))}
                     </View>
@@ -316,154 +338,10 @@ function CategorySection({ items, onItemPress, title }: CategorySectionProps) {
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.grid}>
         {items.map((item) => (
-          <CategoryCard key={item.id} item={item} onPress={() => onItemPress(item)} />
+          <CategoryCard key={item.id} item={item} onPressItem={onItemPress} />
         ))}
       </View>
     </View>
-  );
-}
-
-type CategoryCardProps = {
-  item: CategoryItem;
-  onPress: () => void;
-};
-
-function CategoryCard({ item, onPress }: CategoryCardProps) {
-  const theme = useAppTheme();
-  const styles = createStyles(theme);
-  const iconPreset = categoryIconCatalog[item.iconKey];
-
-  return (
-    <Pressable onPress={onPress} style={styles.cardPressable}>
-      {({ pressed }) => (
-        <View style={[styles.card, pressed ? styles.cardPressed : null]}>
-          <View style={[styles.iconBadge, { backgroundColor: toSoftColor(item.colorValue) }]}>
-            <AppIcon color={item.colorValue} icon={iconPreset.icon} size={20} strokeWidth={2.2} />
-          </View>
-
-          <Text numberOfLines={1} style={styles.cardLabel}>
-            {item.label}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-type ActionCardProps = {
-  icon?: typeof Settings02Icon;
-  imageSource?: number;
-  label: string;
-  onPress: () => void;
-  variant?: 'dashed' | 'edit' | 'solid';
-};
-
-function ActionCard({ icon, imageSource, label, onPress, variant = 'solid' }: ActionCardProps) {
-  const theme = useAppTheme();
-  const styles = createStyles(theme);
-
-  return (
-    <Pressable onPress={onPress} style={styles.cardPressable}>
-      {({ pressed }) => (
-        <View
-          style={[
-            styles.card,
-            variant === 'dashed' ? styles.cardDashed : null,
-            variant === 'edit' ? styles.cardEdit : null,
-            pressed ? styles.cardPressed : null,
-          ]}
-        >
-          <View style={[styles.actionBadge, variant === 'edit' ? styles.actionBadgeEdit : null]}>
-            {imageSource ? <Image resizeMode='contain' source={imageSource} style={styles.actionImage} /> : null}
-
-            {icon ? (
-              <AppIcon
-                color={variant === 'edit' ? theme.colors.surface : theme.colors.textSecondary}
-                icon={icon}
-                size={20}
-                strokeWidth={2.2}
-              />
-            ) : null}
-          </View>
-
-          <Text numberOfLines={1} style={styles.cardLabel}>
-            {label}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-type IconOptionButtonProps = {
-  accentColorValue: string;
-  iconKey: CategoryIconKey;
-  isSelected: boolean;
-  onPress: () => void;
-};
-
-function IconOptionButton({ accentColorValue, iconKey, isSelected, onPress }: IconOptionButtonProps) {
-  const theme = useAppTheme();
-  const styles = createStyles(theme);
-  const iconPreset = categoryIconCatalog[iconKey];
-  const normalizedColor = normalizeHexColor(accentColorValue);
-  const solidColor = isValidHexColor(normalizedColor) ? normalizedColor : theme.colors.primary;
-  const softColor = isValidHexColor(normalizedColor) ? toSoftColor(normalizedColor) : theme.colors.surfaceAlt;
-
-  return (
-    <Pressable onPress={onPress} style={styles.iconOptionPressable}>
-      {({ pressed }) => (
-        <View
-          style={[
-            styles.iconOption,
-            isSelected ? { backgroundColor: softColor } : styles.iconOptionIdle,
-            isSelected
-              ? [
-                  styles.iconOptionSelected,
-                  {
-                    borderColor: solidColor,
-                    boxShadow: createFocusRingShadow(softColor),
-                  },
-                ]
-              : null,
-            pressed ? styles.iconOptionPressed : null,
-          ]}
-        >
-          <AppIcon
-            color={isSelected ? solidColor : theme.colors.textHint}
-            icon={iconPreset.icon}
-            size={20}
-            strokeWidth={2.2}
-          />
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-type ColorOptionButtonProps = {
-  colorValue: string;
-  isSelected: boolean;
-  onPress: () => void;
-};
-
-function ColorOptionButton({ colorValue, isSelected, onPress }: ColorOptionButtonProps) {
-  const styles = createStyles(useAppTheme());
-
-  return (
-    <Pressable onPress={onPress} style={styles.colorOptionPressable}>
-      {({ pressed }) => (
-        <View
-          style={[
-            styles.colorOptionOuter,
-            isSelected ? { borderColor: colorValue } : null,
-            pressed ? styles.colorOptionPressed : null,
-          ]}
-        >
-          <View style={[styles.colorOptionInner, { backgroundColor: colorValue }]} />
-        </View>
-      )}
-    </Pressable>
   );
 }
 
@@ -500,70 +378,6 @@ function createStyles(theme: AppTheme) {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: spacing.sm,
-    },
-    cardPressable: {
-      width: '48%',
-      minWidth: 140,
-    },
-    card: {
-      minHeight: 58,
-      borderRadius: radius.lg,
-      borderCurve: 'continuous',
-      borderWidth: 1,
-      borderColor: theme.colors.borderAlt,
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.xs,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      boxShadow: theme.shadow.lifted,
-    },
-    cardDashed: {
-      borderStyle: 'dashed',
-      borderColor: theme.colors.border,
-    },
-    cardEdit: {
-      borderColor: theme.colors.border,
-    },
-    cardPressed: {
-      opacity: 0.9,
-      transform: [{ scale: 0.985 }],
-    },
-    iconBadge: {
-      width: 34,
-      height: 34,
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: 'rgba(25, 28, 29, 0.08)',
-    },
-    actionBadge: {
-      width: 34,
-      height: 34,
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceAlt,
-      borderWidth: 1,
-      borderColor: theme.colors.borderAlt,
-    },
-    actionBadgeEdit: {
-      backgroundColor: theme.colors.tertiary,
-      borderColor: theme.colors.tertiary,
-    },
-    actionImage: {
-      width: 22,
-      height: 22,
-    },
-    cardLabel: {
-      flex: 1,
-      ...typography.bodyMedium,
-      fontFamily: typography.titleMedium.fontFamily,
-      color: theme.colors.textSecondary,
     },
     modalRoot: {
       flex: 1,
@@ -685,49 +499,6 @@ function createStyles(theme: AppTheme) {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: spacing.sm,
-    },
-    colorOptionPressable: {
-      borderRadius: radius.pill,
-    },
-    colorOptionOuter: {
-      width: 34,
-      height: 34,
-      borderRadius: radius.pill,
-      borderWidth: 2,
-      borderColor: staticColors.transparent,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
-    },
-    colorOptionInner: {
-      width: 22,
-      height: 22,
-      borderRadius: radius.pill,
-    },
-    colorOptionPressed: {
-      opacity: 0.9,
-    },
-    iconOptionPressable: {
-      borderRadius: radius.md,
-    },
-    iconOption: {
-      width: 46,
-      height: 46,
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: 'rgba(25, 28, 29, 0.08)',
-    },
-    iconOptionIdle: {
-      backgroundColor: theme.colors.surfaceAlt,
-    },
-    iconOptionSelected: {
-      borderWidth: 1,
-    },
-    iconOptionPressed: {
-      opacity: 0.92,
     },
     confirmPressable: {
       borderRadius: radius.lg,

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import type { ChartPoint } from '@/mock/report-data';
@@ -48,25 +48,23 @@ export function LineChart({
   visiblePointCount = 7,
 }: LineChartProps) {
   const theme = useAppTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const styles = createStyles(theme);
-  const [containerWidth, setContainerWidth] = useState(0);
   const resolvedMaxY = resolveChartMaxY(points, maxY);
   const resolvedInterval = interval ?? resolveChartInterval(resolvedMaxY);
   const strokeColor = lineColor ?? theme.colors.primary;
   const svgHeight = height - chartLayout.outerTopPadding - chartLayout.outerBottomPadding;
   const plotHeight = svgHeight - chartLayout.plotTopPadding - chartLayout.bottomAxisHeight;
   const fallbackPlotWidth = visiblePointCount * 52;
-  const availablePlotWidth =
-    containerWidth > 0
-      ? Math.max(
-          containerWidth -
-            chartLayout.outerLeftPadding -
-            chartLayout.outerRightPadding -
-            chartLayout.axisLabelWidth -
-            chartLayout.canvasRightPadding,
-          0,
-        )
-      : fallbackPlotWidth;
+  const availablePlotWidth = Math.max(
+    windowWidth -
+      spacing.lg * 2 -
+      chartLayout.outerLeftPadding -
+      chartLayout.outerRightPadding -
+      chartLayout.axisLabelWidth -
+      chartLayout.canvasRightPadding,
+    fallbackPlotWidth,
+  );
   const minimumPlotWidth =
     points.length <= visiblePointCount
       ? availablePlotWidth
@@ -112,10 +110,7 @@ export function LineChart({
   }, [resolvedInterval, resolvedMaxY]);
 
   return (
-    <View
-      style={[styles.container, { height }]}
-      onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
-    >
+    <View style={[styles.container, { height }]}>
       <ScrollView
         horizontal
         bounces={false}

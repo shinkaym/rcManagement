@@ -1,7 +1,10 @@
 import { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { categoryIconCatalog, type CategoryIconKey } from '@/mock/category-data';
+import {
+  expenseCategoryIconCatalog,
+  type ExpenseCategoryIconCode,
+} from '@/features/category/model/category-icon';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { AppTheme } from '@/shared/theme';
 import { createFocusRingShadow } from '@/shared/theme/tokens/shadow';
@@ -11,26 +14,26 @@ import { isValidHexColor, normalizeHexColor, toSoftColor } from '@/shared/utils/
 
 type IconOptionButtonProps = {
   accentColorValue: string;
-  iconKey: CategoryIconKey;
+  iconCode: ExpenseCategoryIconCode;
   isSelected: boolean;
-  onPressIcon: (iconKey: CategoryIconKey) => void;
+  onPressIcon: (iconCode: ExpenseCategoryIconCode) => void;
 };
 
 export const IconOptionButton = memo(function IconOptionButtonComponent({
   accentColorValue,
-  iconKey,
+  iconCode,
   isSelected,
   onPressIcon,
 }: IconOptionButtonProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const iconPreset = categoryIconCatalog[iconKey];
+  const iconPreset = expenseCategoryIconCatalog[iconCode];
   const normalizedColor = normalizeHexColor(accentColorValue);
   const solidColor = isValidHexColor(normalizedColor) ? normalizedColor : theme.colors.primary;
   const softColor = isValidHexColor(normalizedColor) ? toSoftColor(normalizedColor) : theme.colors.surfaceAlt;
 
   return (
-    <Pressable onPress={() => onPressIcon(iconKey)} style={styles.iconOptionPressable}>
+    <Pressable onPress={() => onPressIcon(iconCode)} style={styles.iconOptionPressable}>
       {({ pressed }) => (
         <View
           style={[

@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { categoryIconCatalog, type CategoryItem } from '@/mock/category-data';
+import { resolveExpenseCategoryIconCode, expenseCategoryIconCatalog } from '@/features/category/model/category-icon';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { AppTheme } from '@/shared/theme';
 import { radius } from '@/shared/theme/tokens/radius';
@@ -11,25 +12,36 @@ import { AppIcon } from '@/shared/ui/icon';
 import { toSoftColor } from '@/shared/utils/color';
 
 type CategoryCardProps = {
-  item: CategoryItem;
-  onPressItem: (item: CategoryItem) => void;
+  disabled?: boolean;
+  item: ExpenseCategory;
+  onPressItem?: (item: ExpenseCategory) => void;
 };
 
-export const CategoryCard = memo(function CategoryCardComponent({ item, onPressItem }: CategoryCardProps) {
+export const CategoryCard = memo(function CategoryCardComponent({
+  disabled = false,
+  item,
+  onPressItem,
+}: CategoryCardProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const iconPreset = categoryIconCatalog[item.iconKey];
+  const iconCode = resolveExpenseCategoryIconCode(item);
+  const iconPreset = expenseCategoryIconCatalog[iconCode];
+  const colorValue = item.color ?? theme.colors.primary;
 
   return (
-    <Pressable onPress={() => onPressItem(item)} style={styles.cardPressable}>
+    <Pressable
+      disabled={disabled || !onPressItem}
+      onPress={onPressItem ? () => onPressItem(item) : undefined}
+      style={styles.cardPressable}
+    >
       {({ pressed }) => (
-        <View style={[styles.card, pressed ? styles.cardPressed : null]}>
-          <View style={[styles.iconBadge, { backgroundColor: toSoftColor(item.colorValue) }]}>
-            <AppIcon color={item.colorValue} icon={iconPreset.icon} size={20} strokeWidth={2.2} />
+        <View style={[styles.card, disabled ? styles.cardDisabled : null, pressed ? styles.cardPressed : null]}>
+          <View style={[styles.iconBadge, { backgroundColor: toSoftColor(colorValue) }]}>
+            <AppIcon color={colorValue} icon={iconPreset.icon} size={20} strokeWidth={2.2} />
           </View>
 
           <Text numberOfLines={1} style={styles.cardLabel}>
-            {item.label}
+            {item.name}
           </Text>
         </View>
       )}
@@ -59,6 +71,9 @@ function createStyles(theme: AppTheme) {
     cardPressed: {
       opacity: 0.9,
       transform: [{ scale: 0.985 }],
+    },
+    cardDisabled: {
+      opacity: 0.72,
     },
     iconBadge: {
       width: 34,

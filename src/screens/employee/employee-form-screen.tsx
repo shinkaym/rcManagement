@@ -2,8 +2,9 @@ import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import type { Employee, EmployeeStatus } from '@/features/employee/model/employee.types';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { staticColors } from '@/shared/theme/tokens/colors';
@@ -11,12 +12,10 @@ import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import type { EmployeeItem } from '../../mock/employee-data';
 import { employeeMockData } from '../../mock/employee-data';
 import { AppTheme } from '@/shared/theme';
 
 type EmployeeFormMode = 'create' | 'edit';
-type EmployeeStatus = 'active' | 'inactive';
 
 type EmployeeFormScreenProps = {
   employeeId?: string;
@@ -24,9 +23,17 @@ type EmployeeFormScreenProps = {
   onClose: () => void;
 };
 
+type EmployeeFormSeed = {
+  email: string;
+  name: string;
+  note: string;
+  phone: string;
+  status: EmployeeStatus;
+};
+
 const statusTabs = [
-  { label: 'Active', value: 'active' as const },
-  { label: 'Inactive', value: 'inactive' as const },
+  { label: 'Active', value: 'ACTIVE' as const },
+  { label: 'Inactive', value: 'INACTIVE' as const },
 ];
 
 export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormScreenProps) {
@@ -38,16 +45,11 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
     [employeeId],
   );
 
-  const seed = mode === 'edit' ? employee : buildCreateSeed();
-  const [employeeCode, setEmployeeCode] = useState(seed.employeeCode);
+  const seed = mode === 'edit' ? buildEmployeeFormSeed(employee) : buildCreateSeed();
   const [fullName, setFullName] = useState(seed.name);
-  const [role, setRole] = useState(seed.role);
-  const [note, setNote] = useState(seed.bio);
   const [email, setEmail] = useState(seed.email);
   const [phone, setPhone] = useState(seed.phone);
-  const [dob, setDob] = useState(seed.dob);
-  const [address, setAddress] = useState(seed.address);
-  const [startDate, setStartDate] = useState(seed.startDate);
+  const [note, setNote] = useState(seed.note);
   const [status, setStatus] = useState<EmployeeStatus>(seed.status);
 
   return (
@@ -60,49 +62,9 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.profileSection}>
-            <View style={styles.avatarShell}>
-              <View style={styles.avatarFrame}>
-                <Image source={{ uri: seed.avatarUrl }} style={styles.avatarImage} resizeMode='cover' />
-              </View>
-
-              <Pressable onPress={() => {}} style={styles.avatarEditPressable}>
-                {({ pressed }) => (
-                  <View style={[styles.avatarEditButton, pressed ? styles.avatarEditButtonPressed : null]}>
-                    <AppIcon icon={PencilEdit02Icon} size={14} color={staticColors.white} strokeWidth={2.1} />
-                  </View>
-                )}
-              </Pressable>
-            </View>
-
-            <Text style={styles.photoHintText}>Tap to change photo</Text>
-          </View>
-
           <FieldStack>
-            <LabeledField label='Employee Code'>
-              <FormTextInput
-                value={employeeCode}
-                onChangeText={setEmployeeCode}
-                placeholder='1234'
-                keyboardType='number-pad'
-              />
-            </LabeledField>
-
             <LabeledField label='Full name'>
               <FormTextInput value={fullName} onChangeText={setFullName} placeholder='Employee full name' />
-            </LabeledField>
-
-            <LabeledField label='Role'>
-              <FormTextInput value={role} onChangeText={setRole} placeholder='Salon Manager' />
-            </LabeledField>
-
-            <LabeledField label='Note'>
-              <FormTextInput
-                multiline
-                value={note}
-                onChangeText={setNote}
-                placeholder='Short note about this employee'
-              />
             </LabeledField>
 
             <LabeledField label='Email'>
@@ -124,19 +86,16 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
               />
             </LabeledField>
 
-            <LabeledField label='DOB'>
-              <FormTextInput value={dob} onChangeText={setDob} placeholder='06/30/2003' />
+            <LabeledField label='Note'>
+              <FormTextInput
+                multiline
+                value={note}
+                onChangeText={setNote}
+                placeholder='Short note about this employee'
+              />
             </LabeledField>
 
-            <LabeledField label='Address'>
-              <FormTextInput multiline value={address} onChangeText={setAddress} placeholder='Employee address' />
-            </LabeledField>
-
-            <LabeledField label='Start date'>
-              <FormTextInput value={startDate} onChangeText={setStartDate} placeholder='06/30/2003' />
-            </LabeledField>
-
-            <View style={styles.statusRow}>
+            <View style={styles.statusSection}>
               <Text style={styles.fieldLabel}>Status</Text>
               <View style={styles.statusTabsWrap}>
                 {statusTabs.map((item) => {
@@ -153,7 +112,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
                           style={[
                             styles.statusOption,
                             isSelected
-                              ? item.value === 'active'
+                              ? item.value === 'ACTIVE'
                                 ? styles.statusOptionActive
                                 : styles.statusOptionInactive
                               : styles.statusOptionDefault,
@@ -164,7 +123,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
                             style={[
                               styles.statusOptionLabel,
                               isSelected
-                                ? item.value === 'active'
+                                ? item.value === 'ACTIVE'
                                   ? styles.statusOptionLabelActive
                                   : styles.statusOptionLabelInactive
                                 : null,
@@ -258,20 +217,23 @@ function FormTextInput({
   );
 }
 
-function buildCreateSeed(): EmployeeItem {
+function buildEmployeeFormSeed(employee: Employee): EmployeeFormSeed {
   return {
-    ...employeeMockData[6],
-    id: 'employee-new',
-    employeeCode: '1234',
-    name: '',
-    role: '',
-    bio: '',
+    email: employee.email ?? '',
+    name: employee.name,
+    note: employee.note ?? '',
+    phone: employee.phone ?? '',
+    status: employee.status,
+  };
+}
+
+function buildCreateSeed(): EmployeeFormSeed {
+  return {
     email: '',
+    name: '',
+    note: '',
     phone: '',
-    dob: '06/30/2003',
-    address: '',
-    startDate: '06/30/2003',
-    status: 'active',
+    status: 'ACTIVE',
   };
 }
 
@@ -290,62 +252,7 @@ function createStyles(theme: AppTheme) {
       paddingRight: spacing.lg,
       paddingBottom: navigationMetrics.contentBottomInset,
       paddingLeft: spacing.lg,
-      gap: spacing.md,
-    },
-    profileSection: {
-      alignItems: 'center',
-      paddingTop: spacing.sm,
-    },
-    avatarShell: {
-      position: 'relative',
-      width: 124,
-      height: 124,
-      padding: 4,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarFrame: {
-      width: 116,
-      height: 116,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.xxl,
-      borderCurve: 'continuous',
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: theme.colors.borderAlt,
-      backgroundColor: theme.colors.surface,
-      boxShadow: theme.shadow.strong,
-    },
-    avatarImage: {
-      width: '100%',
-      height: '100%',
-    },
-    avatarEditPressable: {
-      position: 'absolute',
-      right: -2,
-      bottom: -2,
-      borderRadius: radius.pill,
-    },
-    avatarEditButton: {
-      width: 36,
-      height: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.pill,
-      backgroundColor: theme.colors.primary,
-      boxShadow: theme.shadow.accentButton,
-    },
-    avatarEditButtonPressed: {
-      opacity: 0.9,
-    },
-    photoHintText: {
-      ...typography.labelLarge,
-      marginTop: spacing.sm,
-      color: theme.colors.textHint,
-      fontFamily: typography.titleMedium.fontFamily,
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
+      gap: spacing.lg,
     },
     fieldStack: {
       gap: spacing.sm,
@@ -372,17 +279,14 @@ function createStyles(theme: AppTheme) {
       includeFontPadding: false,
     },
     inputMultiline: {
-      minHeight: 84,
+      minHeight: 96,
       height: undefined,
       paddingTop: spacing.sm,
       paddingBottom: spacing.sm,
       includeFontPadding: true,
     },
-    statusRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
+    statusSection: {
+      gap: spacing.sm,
     },
     statusTabsWrap: {
       flexDirection: 'row',
@@ -393,8 +297,8 @@ function createStyles(theme: AppTheme) {
       borderRadius: radius.md,
     },
     statusOption: {
-      minWidth: 88,
-      minHeight: 34,
+      minWidth: 104,
+      minHeight: 36,
       paddingHorizontal: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',

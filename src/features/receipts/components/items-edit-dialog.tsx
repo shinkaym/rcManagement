@@ -5,6 +5,7 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import type { ListRenderItemInfo } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { ReceiptItem } from '@/features/receipts/model/receipt.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
@@ -15,21 +16,21 @@ import {
   createEmptyReceiptItem,
   formatCurrency,
   getReceiptItemTotal,
-  moveItemByDirection,
+  moveReceiptItemByDirection,
+  normalizeReceiptItems,
   sanitizeCurrencyInput,
-  sanitizeIntegerInput,
+  sanitizeDecimalInput,
 } from '../receipt-item-utils';
-import type { ReceiptItemState } from '../receipt-types';
 import { AppTheme } from '@/shared/theme';
 
 type HugeIcon = typeof Cancel01Icon;
-type ReceiptItemEditableField = keyof Pick<ReceiptItemState, 'name' | 'price' | 'quantity'>;
+type ReceiptItemEditableField = 'name' | 'quantity' | 'unitPrice';
 
 type ItemsEditDialogProps = {
   isVisible: boolean;
-  items: ReceiptItemState[];
+  items: ReceiptItem[];
   onClose: () => void;
-  onSave: (items: ReceiptItemState[]) => void;
+  onSave: (items: ReceiptItem[]) => void;
 };
 
 export const ItemsEditDialog = memo(function ItemsEditDialogComponent({
@@ -41,70 +42,74 @@ export const ItemsEditDialog = memo(function ItemsEditDialogComponent({
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, insets.bottom), [insets.bottom, theme]);
-  const [draftItems, setDraftItems] = useState<ReceiptItemState[]>(items);
+  const [draftItems, setDraftItems] = useState<ReceiptItem[]>(items);
 
   useEffect(() => {
     if (isVisible) {
-      setDraftItems(items.map((item) => ({ ...item })));
+      setDraftItems(normalizeReceiptItems(items.map((item) => ({ ...item }))));
     }
   }, [isVisible, items]);
 
   const handleAddItem = useCallback(() => {
-    setDraftItems((currentValue) => [...currentValue, createEmptyReceiptItem()]);
+    setDraftItems((currentValue) => [...currentValue, createEmptyReceiptItem(currentValue.length)]);
   }, []);
 
-  const handleChangeItem = useCallback((itemId: string, field: ReceiptItemEditableField, value: string) => {
+  const handleChangeItem = useCallback((sortOrder: number, field: ReceiptItemEditableField, value: string) => {
     setDraftItems((currentValue) =>
-      currentValue.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
+      normalizeReceiptItems(
+        currentValue.map((item) => {
+          if (item.sortOrder !== sortOrder) {
+            return item;
+          }
 
-        if (field === 'quantity') {
+          if (field === 'quantity') {
+            return {
+              ...item,
+              quantity: sanitizeDecimalInput(value),
+            };
+          }
+
+          if (field === 'unitPrice') {
+            return {
+              ...item,
+              unitPrice: sanitizeCurrencyInput(value),
+            };
+          }
+
           return {
             ...item,
-            quantity: sanitizeIntegerInput(value),
+            name: value,
           };
-        }
-
-        if (field === 'price') {
-          return {
-            ...item,
-            price: sanitizeCurrencyInput(value),
-          };
-        }
-
-        return {
-          ...item,
-          name: value,
-        };
-      }),
+        }),
+      ),
     );
   }, []);
 
-  const handleDeleteItem = useCallback((itemId: string) => {
-    setDraftItems((currentValue) => currentValue.filter((item) => item.id !== itemId));
+  const handleDeleteItem = useCallback((sortOrder: number) => {
+    setDraftItems((currentValue) => normalizeReceiptItems(currentValue.filter((item) => item.sortOrder !== sortOrder)));
   }, []);
 
-  const handleMoveItem = useCallback((itemId: string, direction: 'down' | 'up') => {
-    setDraftItems((currentValue) => moveItemByDirection(currentValue, itemId, direction));
+  const handleMoveItem = useCallback((sortOrder: number, direction: 'down' | 'up') => {
+    setDraftItems((currentValue) => moveReceiptItemByDirection(currentValue, sortOrder, direction));
   }, []);
 
   const handleSave = useCallback(() => {
-    const sanitizedItems = draftItems.map((item) => ({
-      ...item,
-      name: item.name.trim() || 'Untitled item',
-      quantity: sanitizeIntegerInput(item.quantity) || '0',
-      price: sanitizeCurrencyInput(item.price) || '0',
-    }));
+    const sanitizedItems = normalizeReceiptItems(
+      draftItems.map((item) => ({
+        ...item,
+        name: item.name.trim() || 'Untitled item',
+        quantity: sanitizeDecimalInput(item.quantity) || '0',
+        unitPrice: sanitizeCurrencyInput(item.unitPrice ?? '') || '0.00',
+      })),
+    );
 
     onSave(sanitizedItems);
   }, [draftItems, onSave]);
 
-  const keyExtractor = useCallback((item: ReceiptItemState) => item.id, []);
+  const keyExtractor = useCallback((item: ReceiptItem) => item.sortOrder.toString(), []);
 
   const renderItem = useCallback(
-    ({ index, item }: ListRenderItemInfo<ReceiptItemState>) => (
+    ({ index, item }: ListRenderItemInfo<ReceiptItem>) => (
       <DialogItemRow
         index={index}
         item={item}
@@ -186,11 +191,11 @@ export const ItemsEditDialog = memo(function ItemsEditDialogComponent({
 
 type DialogItemRowProps = {
   index: number;
-  item: ReceiptItemState;
+  item: ReceiptItem;
   itemCount: number;
-  onChangeItem: (itemId: string, field: ReceiptItemEditableField, value: string) => void;
-  onDeleteItem: (itemId: string) => void;
-  onMoveItem: (itemId: string, direction: 'down' | 'up') => void;
+  onChangeItem: (sortOrder: number, field: ReceiptItemEditableField, value: string) => void;
+  onDeleteItem: (sortOrder: number) => void;
+  onMoveItem: (sortOrder: number, direction: 'down' | 'up') => void;
   styles: ReturnType<typeof createStyles>;
 };
 
@@ -203,18 +208,21 @@ const DialogItemRow = memo(function DialogItemRowComponent({
   onMoveItem,
   styles,
 }: DialogItemRowProps) {
-  const handleChangeName = useCallback((value: string) => onChangeItem(item.id, 'name', value), [item.id, onChangeItem]);
+  const handleChangeName = useCallback(
+    (value: string) => onChangeItem(item.sortOrder, 'name', value),
+    [item.sortOrder, onChangeItem],
+  );
   const handleChangeQuantity = useCallback(
-    (value: string) => onChangeItem(item.id, 'quantity', value),
-    [item.id, onChangeItem],
+    (value: string) => onChangeItem(item.sortOrder, 'quantity', value),
+    [item.sortOrder, onChangeItem],
   );
   const handleChangePrice = useCallback(
-    (value: string) => onChangeItem(item.id, 'price', value),
-    [item.id, onChangeItem],
+    (value: string) => onChangeItem(item.sortOrder, 'unitPrice', value),
+    [item.sortOrder, onChangeItem],
   );
-  const handleMoveUp = useCallback(() => onMoveItem(item.id, 'up'), [item.id, onMoveItem]);
-  const handleMoveDown = useCallback(() => onMoveItem(item.id, 'down'), [item.id, onMoveItem]);
-  const handleDelete = useCallback(() => onDeleteItem(item.id), [item.id, onDeleteItem]);
+  const handleMoveUp = useCallback(() => onMoveItem(item.sortOrder, 'up'), [item.sortOrder, onMoveItem]);
+  const handleMoveDown = useCallback(() => onMoveItem(item.sortOrder, 'down'), [item.sortOrder, onMoveItem]);
+  const handleDelete = useCallback(() => onDeleteItem(item.sortOrder), [item.sortOrder, onDeleteItem]);
 
   return (
     <View style={styles.dialogItemCard}>
@@ -244,7 +252,7 @@ const DialogItemRow = memo(function DialogItemRowComponent({
             value={item.quantity}
             onChangeText={handleChangeQuantity}
             placeholder='0'
-            keyboardType='number-pad'
+            keyboardType='decimal-pad'
             textAlign='center'
             styles={styles}
           />
@@ -253,7 +261,7 @@ const DialogItemRow = memo(function DialogItemRowComponent({
         <View style={styles.dialogInlineField}>
           <Text style={styles.dialogFieldLabel}>PRICE</Text>
           <DialogInput
-            value={item.price}
+            value={item.unitPrice ?? '0.00'}
             onChangeText={handleChangePrice}
             placeholder='0.00'
             keyboardType='decimal-pad'

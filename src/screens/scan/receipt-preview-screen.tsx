@@ -15,8 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryBadge } from '@/features/category/components/category-badge';
 import { CategoryPickerSheet } from '@/features/category/components/category-picker-sheet';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { SegmentTabs } from '@/features/receipts/components/segment-tabs';
-import { defaultCategorySeed, type CategoryItem } from '@/mock/category-data';
+import { expenseCategorySeed } from '@/mock/category-data';
+import { receiptPreviewSeed } from '@/mock/receipt-data';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
@@ -24,14 +26,15 @@ import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import { ItemsEditDialog } from '../../features/receipts/components/items-edit-dialog';
+import type { Receipt, ReceiptItem } from '../../features/receipts/model/receipt.types';
 import {
   formatCurrency,
   getReceiptItemTotal,
-  initialReceiptItems,
-  parseCurrencyValue,
+  parseDecimalValue,
+  recalculateReceipt,
+  sanitizeCardLastFourInput,
   sanitizeCurrencyInput,
 } from '../../features/receipts/receipt-item-utils';
-import type { ReceiptItemState } from '../../features/receipts/receipt-types';
 import { AppTheme } from '@/shared/theme';
 
 const footerHeight = 116;
@@ -39,20 +42,6 @@ const footerHeight = 116;
 type HugeIcon = typeof Store04Icon;
 type PaymentMethod = 'cash' | 'card';
 type TotalFieldKey = 'discount' | 'tax' | 'tips';
-
-type MerchantFormState = {
-  address: string;
-  date: string;
-  name: string;
-  phone: string;
-};
-
-type CardFormState = {
-  cardPlaceholder: string;
-  lastFourDigits: string;
-};
-
-type TotalsFormState = Record<TotalFieldKey, string>;
 type EditableTotalsState = Record<TotalFieldKey, boolean>;
 
 type ReceiptPreviewScreenProps = {
@@ -63,64 +52,114 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
-
-  const [merchant, setMerchant] = useState<MerchantFormState>({
-    name: 'Shell Gas Station',
-    phone: '(555) 019-2837',
-    date: 'Oct 24, 2023 - 14:30',
-    address: '123 Market St, Suite 400',
-  });
+  const availableCategories = expenseCategorySeed;
+  const [receipt, setReceipt] = useState<Receipt>(() => recalculateReceipt(receiptPreviewSeed));
   const [isMerchantEditing, setIsMerchantEditing] = useState(false);
   const [isMerchantCategoryPickerVisible, setIsMerchantCategoryPickerVisible] = useState(false);
-  const [merchantCategory, setMerchantCategory] = useState<CategoryItem>(defaultCategorySeed[0]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
-  const [cardForm, setCardForm] = useState<CardFormState>({
-    cardPlaceholder: 'VISA',
-    lastFourDigits: '4224',
-  });
-  const [items, setItems] = useState<ReceiptItemState[]>(initialReceiptItems);
   const [isItemsDialogVisible, setIsItemsDialogVisible] = useState(false);
-  const [note, setNote] = useState('Fill up');
-  const [totals, setTotals] = useState<TotalsFormState>({
-    tax: '12.00',
-    tips: '12.00',
-    discount: '0.00',
-  });
   const [editableTotals, setEditableTotals] = useState<EditableTotalsState>({
     tax: false,
     tips: false,
     discount: false,
   });
 
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + getReceiptItemTotal(item), 0), [items]);
-  const taxValue = parseCurrencyValue(totals.tax);
-  const tipsValue = parseCurrencyValue(totals.tips);
-  const discountValue = parseCurrencyValue(totals.discount);
-  const totalAmount = subtotal + taxValue + tipsValue - discountValue;
+  const selectedCategory =
+    receipt.category ??
+    availableCategories.find((category) => category.id === receipt.categoryId) ??
+    availableCategories[0];
+  const paymentMethod = receipt.paymentMethodType === 'CASH' ? 'cash' : 'card';
+  const subtotal = useMemo(() => parseDecimalValue(receipt.subtotalAmount), [receipt.subtotalAmount]);
+  const totalAmount = useMemo(() => parseDecimalValue(receipt.totalAmount), [receipt.totalAmount]);
   const paymentMethodTabs = [
     { icon: Cash01Icon, label: 'Cash', value: 'cash' as const },
     { icon: CreditCardIcon, label: 'Card', value: 'card' as const },
   ];
+  const receiptDateLabel = useMemo(() => formatReceiptDateDisplay(receipt.receiptDate), [receipt.receiptDate]);
 
-  function handleMerchantFieldChange(field: keyof MerchantFormState, value: string) {
-    setMerchant((currentValue) => ({
+  function updateReceipt(updater: (currentValue: Receipt) => Receipt) {
+    setReceipt((currentValue) => recalculateReceipt(updater(currentValue)));
+  }
+
+  function handleMerchantFieldChange(field: 'address' | 'name' | 'phone', value: string) {
+    updateReceipt((currentValue) => {
+      if (field === 'name') {
+        return {
+          ...currentValue,
+          merchantName: value,
+          merchantNormalizedName: value.trim().toLowerCase(),
+        };
+      }
+
+      if (field === 'phone') {
+        return {
+          ...currentValue,
+          merchantPhone: value,
+        };
+      }
+
+      return {
+        ...currentValue,
+        merchantAddress: value,
+      };
+    });
+  }
+
+  function handlePaymentMethodChange(nextValue: PaymentMethod) {
+    updateReceipt((currentValue) => ({
       ...currentValue,
-      [field]: value,
+      paymentMethodType: nextValue === 'cash' ? 'CASH' : 'CARD',
+      paymentMethodName: nextValue === 'cash' ? null : currentValue.paymentMethodName ?? '',
+      paymentCardLast4: nextValue === 'cash' ? null : currentValue.paymentCardLast4 ?? '',
+      paymentRawText:
+        nextValue === 'cash'
+          ? null
+          : buildPaymentRawText(currentValue.paymentMethodName ?? '', currentValue.paymentCardLast4 ?? ''),
     }));
   }
 
-  function handleCardFieldChange(field: keyof CardFormState, value: string) {
-    setCardForm((currentValue) => ({
-      ...currentValue,
-      [field]: value,
-    }));
+  function handleCardFieldChange(field: 'lastFourDigits' | 'paymentMethodName', value: string) {
+    updateReceipt((currentValue) => {
+      if (field === 'lastFourDigits') {
+        const nextLastFourDigits = sanitizeCardLastFourInput(value);
+
+        return {
+          ...currentValue,
+          paymentCardLast4: nextLastFourDigits,
+          paymentRawText: buildPaymentRawText(currentValue.paymentMethodName ?? '', nextLastFourDigits),
+        };
+      }
+
+      return {
+        ...currentValue,
+        paymentMethodName: value,
+        paymentRawText: buildPaymentRawText(value, currentValue.paymentCardLast4 ?? ''),
+      };
+    });
   }
 
   function handleTotalFieldChange(field: TotalFieldKey, value: string) {
-    setTotals((currentValue) => ({
-      ...currentValue,
-      [field]: sanitizeCurrencyInput(value),
-    }));
+    const nextValue = sanitizeCurrencyInput(value);
+
+    updateReceipt((currentValue) => {
+      if (field === 'tax') {
+        return {
+          ...currentValue,
+          taxAmount: nextValue,
+        };
+      }
+
+      if (field === 'tips') {
+        return {
+          ...currentValue,
+          tipAmount: nextValue,
+        };
+      }
+
+      return {
+        ...currentValue,
+        discountAmount: nextValue,
+      };
+    });
   }
 
   function handleEnableTotalEdit(field: TotalFieldKey) {
@@ -144,13 +183,20 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     setIsItemsDialogVisible(false);
   }, []);
 
-  const handleSaveItemsDialog = useCallback((nextItems: ReceiptItemState[]) => {
-    setItems(nextItems);
+  const handleSaveItemsDialog = useCallback((nextItems: ReceiptItem[]) => {
+    updateReceipt((currentValue) => ({
+      ...currentValue,
+      items: nextItems,
+    }));
     setIsItemsDialogVisible(false);
   }, []);
 
-  function handleSelectMerchantCategory(category: CategoryItem) {
-    setMerchantCategory(category);
+  function handleSelectMerchantCategory(category: ExpenseCategory) {
+    updateReceipt((currentValue) => ({
+      ...currentValue,
+      category,
+      categoryId: category.id,
+    }));
     setIsMerchantCategoryPickerVisible(false);
   }
 
@@ -183,7 +229,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 <View style={styles.merchantNameInputRow}>
                   <View style={styles.merchantBadgeColumn}>
                     <CategoryBadge
-                      category={merchantCategory}
+                      category={selectedCategory}
                       onPress={() => setIsMerchantCategoryPickerVisible(true)}
                     />
                     <Text style={styles.badgeHintText}>Tap to change</Text>
@@ -191,7 +237,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                   <View style={styles.merchantNameInputColumn}>
                     <Text style={styles.fieldLabel}>NAME</Text>
                     <ReceiptInput
-                      value={merchant.name}
+                      value={receipt.merchantName}
                       onChangeText={(value) => handleMerchantFieldChange('name', value)}
                       placeholder='Merchant name'
                     />
@@ -202,7 +248,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                   <View style={styles.columnField}>
                     <Text style={styles.fieldLabel}>PHONE</Text>
                     <ReceiptInput
-                      value={merchant.phone}
+                      value={receipt.merchantPhone ?? ''}
                       onChangeText={(value) => handleMerchantFieldChange('phone', value)}
                       placeholder='Phone'
                     />
@@ -210,14 +256,14 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
 
                   <View style={styles.columnField}>
                     <Text style={styles.fieldLabel}>DATE</Text>
-                    <MerchantDateField value={merchant.date} onPress={() => {}} />
+                    <MerchantDateField value={receiptDateLabel} onPress={() => {}} />
                   </View>
                 </View>
 
                 <View style={styles.fullWidthField}>
                   <Text style={styles.fieldLabel}>ADDRESS</Text>
                   <ReceiptInput
-                    value={merchant.address}
+                    value={receipt.merchantAddress ?? ''}
                     onChangeText={(value) => handleMerchantFieldChange('address', value)}
                     placeholder='Address'
                     multiline
@@ -227,20 +273,20 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
             ) : (
               <View style={styles.sectionBody}>
                 <View style={styles.merchantIdentityRow}>
-                  <CategoryBadge category={merchantCategory} />
+                  <CategoryBadge category={selectedCategory} />
                   <View style={styles.merchantIdentityText}>
                     <Text style={styles.fieldLabel}>NAME</Text>
-                    <Text style={styles.fieldValue}>{merchant.name}</Text>
-                    <Text style={styles.merchantCategoryValue}>{merchantCategory.label}</Text>
+                    <Text style={styles.fieldValue}>{receipt.merchantName}</Text>
+                    <Text style={styles.merchantCategoryValue}>{selectedCategory.name}</Text>
                   </View>
                 </View>
 
                 <View style={styles.twoColumnRow}>
-                  <DisplayField label='PHONE' value={merchant.phone} />
-                  <DisplayField label='DATE' value={merchant.date} />
+                  <DisplayField label='PHONE' value={receipt.merchantPhone ?? ''} />
+                  <DisplayField label='DATE' value={receiptDateLabel} />
                 </View>
 
-                <DisplayField label='ADDRESS' value={merchant.address} />
+                <DisplayField label='ADDRESS' value={receipt.merchantAddress ?? ''} />
               </View>
             )}
           </SectionCard>
@@ -269,10 +315,10 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
               </View>
 
               <View style={styles.itemsList}>
-                {items.map((item, index) => (
+                {receipt.items.map((item, index) => (
                   <View
-                    key={item.id}
-                    style={[styles.itemRow, index !== items.length - 1 ? styles.itemRowDivider : null]}
+                    key={`${item.sortOrder}-${item.name}`}
+                    style={[styles.itemRow, index !== receipt.items.length - 1 ? styles.itemRowDivider : null]}
                   >
                     <View style={styles.itemNameColumn}>
                       <Text style={styles.itemValueText}>{item.name}</Text>
@@ -282,12 +328,12 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                     </View>
                     <View style={styles.itemPriceColumn}>
                       <Text style={[styles.itemValueText, styles.itemValueCentered]}>
-                        {formatCurrency(parseCurrencyValue(item.price))}
+                        {formatCurrency(parseDecimalValue(item.unitPrice), receipt.currency)}
                       </Text>
                     </View>
                     <View style={styles.itemTotalColumn}>
                       <Text style={[styles.itemValueText, styles.itemValueAlignedRight]}>
-                        {formatCurrency(getReceiptItemTotal(item))}
+                        {formatCurrency(getReceiptItemTotal(item), receipt.currency)}
                       </Text>
                     </View>
                   </View>
@@ -302,7 +348,11 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
               title='Payment Method'
               trailing={
                 <View style={styles.paymentMethodTabsWrap}>
-                  <SegmentTabs items={paymentMethodTabs} selectedValue={paymentMethod} onChange={setPaymentMethod} />
+                  <SegmentTabs
+                    items={paymentMethodTabs}
+                    selectedValue={paymentMethod}
+                    onChange={handlePaymentMethodChange}
+                  />
                 </View>
               }
             />
@@ -310,20 +360,21 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
             {paymentMethod === 'card' ? (
               <View style={styles.paymentInputsRow}>
                 <View style={styles.columnField}>
-                  <Text style={styles.fieldLabel}>Card Placeholder</Text>
+                  <Text style={styles.fieldLabel}>PAYMENT NAME</Text>
                   <ReceiptInput
-                    value={cardForm.cardPlaceholder}
-                    onChangeText={(value) => handleCardFieldChange('cardPlaceholder', value)}
-                    placeholder='Card placeholder'
+                    value={receipt.paymentMethodName ?? ''}
+                    onChangeText={(value) => handleCardFieldChange('paymentMethodName', value)}
+                    placeholder='e.g. VISA'
                   />
                 </View>
 
                 <View style={styles.columnField}>
-                  <Text style={styles.fieldLabel}>Last 4 Digits</Text>
+                  <Text style={styles.fieldLabel}>LAST 4 DIGITS</Text>
                   <ReceiptInput
-                    value={cardForm.lastFourDigits}
+                    value={receipt.paymentCardLast4 ?? ''}
                     onChangeText={(value) => handleCardFieldChange('lastFourDigits', value)}
                     placeholder='Last 4 digits'
+                    keyboardType='number-pad'
                   />
                 </View>
               </View>
@@ -334,7 +385,17 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
             <SectionHeader icon={Note01Icon} title='Note' />
 
             <View style={styles.sectionBody}>
-              <ReceiptInput value={note} onChangeText={setNote} placeholder='Write a note' multiline />
+              <ReceiptInput
+                value={receipt.note ?? ''}
+                onChangeText={(value) =>
+                  updateReceipt((currentValue) => ({
+                    ...currentValue,
+                    note: value,
+                  }))
+                }
+                placeholder='Write a note'
+                multiline
+              />
             </View>
           </SectionCard>
 
@@ -343,21 +404,24 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
               <EditableTotalRow
                 isEditing={editableTotals.tax}
                 label='Tax'
-                value={totals.tax}
+                value={receipt.taxAmount}
+                currencyCode={receipt.currency}
                 onChangeText={(value) => handleTotalFieldChange('tax', value)}
                 onEdit={() => handleEnableTotalEdit('tax')}
               />
               <EditableTotalRow
                 isEditing={editableTotals.tips}
                 label='Tips'
-                value={totals.tips}
+                value={receipt.tipAmount}
+                currencyCode={receipt.currency}
                 onChangeText={(value) => handleTotalFieldChange('tips', value)}
                 onEdit={() => handleEnableTotalEdit('tips')}
               />
               <EditableTotalRow
                 isEditing={editableTotals.discount}
                 label='Discount'
-                value={totals.discount}
+                value={receipt.discountAmount}
+                currencyCode={receipt.currency}
                 onChangeText={(value) => handleTotalFieldChange('discount', value)}
                 onEdit={() => handleEnableTotalEdit('discount')}
                 isNegative
@@ -369,12 +433,12 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
             <View style={styles.amountSummaryRow}>
               <View>
                 <Text style={styles.amountSummaryLabel}>TOTAL AMOUNT</Text>
-                <Text style={styles.totalAmountValue}>{formatCurrency(totalAmount)}</Text>
+                <Text style={styles.totalAmountValue}>{formatCurrency(totalAmount, receipt.currency)}</Text>
               </View>
 
               <View style={styles.subtotalSummaryBlock}>
                 <Text style={styles.amountSummaryLabel}>SUBTOTAL</Text>
-                <Text style={styles.subtotalAmountValue}>{formatCurrency(subtotal)}</Text>
+                <Text style={styles.subtotalAmountValue}>{formatCurrency(subtotal, receipt.currency)}</Text>
               </View>
             </View>
           </SectionCard>
@@ -399,17 +463,18 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
         </View>
 
         <ItemsEditDialog
-          items={items}
+          items={receipt.items}
           isVisible={isItemsDialogVisible}
           onClose={handleCloseItemsDialog}
           onSave={handleSaveItemsDialog}
         />
 
         <CategoryPickerSheet
+          categories={availableCategories}
           isVisible={isMerchantCategoryPickerVisible}
           onClose={() => setIsMerchantCategoryPickerVisible(false)}
           onSelect={handleSelectMerchantCategory}
-          selectedCategoryId={merchantCategory.id}
+          selectedCategoryId={selectedCategory.id}
         />
       </View>
     </>
@@ -555,6 +620,7 @@ const ReceiptInput = memo(function ReceiptInputComponent({
 });
 
 type EditableTotalRowProps = {
+  currencyCode: Receipt['currency'];
   isEditing: boolean;
   isNegative?: boolean;
   label: string;
@@ -564,6 +630,7 @@ type EditableTotalRowProps = {
 };
 
 const EditableTotalRow = memo(function EditableTotalRowComponent({
+  currencyCode,
   isEditing,
   isNegative = false,
   label,
@@ -574,8 +641,8 @@ const EditableTotalRow = memo(function EditableTotalRowComponent({
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
   const formattedValue = isNegative
-    ? `-${formatCurrency(parseCurrencyValue(value))}`
-    : formatCurrency(parseCurrencyValue(value));
+    ? `-${formatCurrency(parseDecimalValue(value), currencyCode)}`
+    : formatCurrency(parseDecimalValue(value), currencyCode);
 
   return (
     <View style={styles.totalRow}>
@@ -609,6 +676,39 @@ const EditableTotalRow = memo(function EditableTotalRowComponent({
     </View>
   );
 });
+
+function buildPaymentRawText(paymentMethodName: string, lastFourDigits: string) {
+  const trimmedPaymentMethodName = paymentMethodName.trim();
+  const trimmedLastFourDigits = sanitizeCardLastFourInput(lastFourDigits);
+
+  if (!trimmedPaymentMethodName && !trimmedLastFourDigits) {
+    return null;
+  }
+
+  if (!trimmedLastFourDigits) {
+    return trimmedPaymentMethodName || null;
+  }
+
+  if (!trimmedPaymentMethodName) {
+    return `•••• ${trimmedLastFourDigits}`;
+  }
+
+  return `${trimmedPaymentMethodName} •••• ${trimmedLastFourDigits}`;
+}
+
+function formatReceiptDateDisplay(receiptDate: string) {
+  const parsedDate = new Date(receiptDate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return receiptDate;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsedDate);
+}
 
 function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
   return StyleSheet.create({

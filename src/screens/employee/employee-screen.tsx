@@ -1,15 +1,17 @@
 import { useMemo, useRef, useState } from 'react';
-import type { ScrollView as ScrollViewType, TextInput as TextInputType } from 'react-native';
-import { ActivityIndicator, Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { ScrollView as ScrollViewType } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import type { Employee } from '@/features/employee/model/employee.types';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { BackToTop } from '@/shared/ui/layout/back-to-top';
+import { LoadingMore } from '@/shared/ui/layout/loading-more';
 
 import { EmployeeCard, EmployeeCardSkeleton } from '../../features/employee/components/employee-card';
-import type { EmployeeItem } from '../../mock/employee-data';
 import { employeeMockData } from '../../mock/employee-data';
 import { AppTheme } from '@/shared/theme';
 
@@ -24,23 +26,23 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const scrollRef = useRef<ScrollViewType | null>(null);
-  const searchInputRef = useRef<TextInputType | null>(null);
-  const [query, setQuery] = useState('');
+  const [draftQuery, setDraftQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFloatingButton, setShowFloatingButton] = useState(true);
   const floatingAnim = useRef(new Animated.Value(1)).current;
 
   const filteredEmployees = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
     if (!normalizedQuery) {
       return employeeMockData;
     }
 
     return employeeMockData.filter((employee) => {
-      const haystack = `${employee.name} ${employee.role} ${employee.bio}`.toLowerCase();
+      const haystack = `${employee.name} ${employee.email ?? ''} ${employee.phone ?? ''} ${employee.note ?? ''} ${employee.status}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [query]);
+  }, [searchQuery]);
 
   const visibleEmployees = useMemo(() => filteredEmployees.slice(0, previewItemLimit), [filteredEmployees]);
 
@@ -64,8 +66,12 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
-  function handleEditEmployee(employee: EmployeeItem) {
+  function handleEditEmployee(employee: Employee) {
     onEditEmployee(employee.id);
+  }
+
+  function handleConfirmSearch() {
+    setSearchQuery(draftQuery);
   }
 
   const floatingTranslateY = floatingAnim.interpolate({
@@ -73,7 +79,7 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
     outputRange: [16, 0],
   });
 
-  const showMockFooter = query.trim().length === 0 && visibleEmployees.length > 0;
+  const showMockFooter = searchQuery.trim().length === 0 && visibleEmployees.length > 0;
 
   return (
     <>
@@ -90,17 +96,18 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
         >
           <View style={styles.searchRow}>
             <TextInput
-              ref={searchInputRef}
-              value={query}
-              onChangeText={setQuery}
+              value={draftQuery}
+              onChangeText={setDraftQuery}
+              onSubmitEditing={handleConfirmSearch}
               placeholder='Search employees'
               placeholderTextColor={theme.colors.textHint}
+              returnKeyType='search'
               style={styles.searchInput}
             />
 
             <Pressable
-              accessibilityLabel='Search employees'
-              onPress={() => searchInputRef.current?.focus()}
+              accessibilityLabel='Confirm employee search'
+              onPress={handleConfirmSearch}
               style={styles.searchButtonPressable}
             >
               {({ pressed }) => (
@@ -133,29 +140,16 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No employee matched</Text>
-              <Text style={styles.emptyDescription}>Try another name, role, or clear the current search keyword.</Text>
+              <Text style={styles.emptyDescription}>
+                Try another name, note, phone, email, or clear the current search keyword.
+              </Text>
             </View>
           )}
 
           {showMockFooter ? (
             <>
-              <View style={styles.loadingBlock}>
-                <ActivityIndicator color={theme.colors.primary} size='small' />
-                <Text style={styles.loadingText}>Loading more...</Text>
-              </View>
-
-              <View style={styles.footerDivider} />
-
-              <View style={styles.footerBlock}>
-                <Text style={styles.footerTitle}>No more employees to show</Text>
-                <Pressable onPress={handleBackToTop} style={styles.backToTopPressable}>
-                  {({ pressed }) => (
-                    <Text style={[styles.backToTopText, pressed ? styles.backToTopTextPressed : null]}>
-                      Back to top
-                    </Text>
-                  )}
-                </Pressable>
-              </View>
+              <LoadingMore />
+              <BackToTop message='No more employees to show' onPress={handleBackToTop} />
             </>
           ) : null}
         </ScrollView>
@@ -278,44 +272,6 @@ function createStyles(theme: AppTheme) {
       ...typography.bodyMedium,
       color: theme.colors.textTertiary,
       textAlign: 'center',
-    },
-    loadingBlock: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: spacing.xl,
-      gap: spacing.xs,
-    },
-    loadingText: {
-      ...typography.bodyMedium,
-      color: theme.colors.textTertiary,
-      textAlign: 'center',
-    },
-    footerDivider: {
-      height: 1,
-      marginTop: spacing.xl,
-      backgroundColor: 'rgba(245, 124, 0, 0.16)',
-    },
-    footerBlock: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: spacing.xl,
-      gap: spacing.xs,
-    },
-    footerTitle: {
-      ...typography.titleMedium,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    backToTopPressable: {
-      borderRadius: radius.pill,
-    },
-    backToTopText: {
-      ...typography.bodyMedium,
-      color: theme.colors.primary,
-      fontFamily: typography.titleMedium.fontFamily,
-    },
-    backToTopTextPressed: {
-      opacity: 0.72,
     },
     floatingButtonContainer: {
       position: 'absolute',

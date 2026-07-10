@@ -3,32 +3,37 @@ import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { Employee } from '@/features/employee/model/employee.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { staticColors } from '@/shared/theme/tokens/colors';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import type { EmployeeItem } from '../../../mock/employee-data';
 import { AppTheme } from '@/shared/theme';
 
 export { EmployeeCardSkeleton } from './employee-card-skeleton';
 
 type EmployeeCardProps = {
-  employee: EmployeeItem;
-  onEdit?: (employee: EmployeeItem) => void;
+  employee: Employee;
+  onEdit?: (employee: Employee) => void;
 };
 
 export const EmployeeCard = memo(function EmployeeCardComponent({ employee, onEdit }: EmployeeCardProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const statusLabel = employee.status === 'active' ? 'Active' : 'Inactive';
+  const statusLabel = employee.status === 'ACTIVE' ? 'Active' : 'Inactive';
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <View style={[styles.statusPill, employee.status === 'active' ? styles.statusOptionActive : styles.statusOptionInactive]}>
+        <View style={styles.headerRow}>
+          <View
+            style={[
+              styles.statusPill,
+              employee.status === 'ACTIVE' ? styles.statusOptionActive : styles.statusOptionInactive,
+            ]}
+          >
             <Text numberOfLines={1} style={styles.statusText}>
               {statusLabel}
             </Text>
@@ -39,8 +44,8 @@ export const EmployeeCard = memo(function EmployeeCardComponent({ employee, onEd
           </Text>
         </View>
 
-        <Text numberOfLines={1} style={styles.bio}>
-          {employee.bio}
+        <Text numberOfLines={2} style={styles.note}>
+          {employee.note?.trim() || 'No note'}
         </Text>
       </View>
 
@@ -71,7 +76,7 @@ function createStyles(theme: AppTheme) {
       flex: 1,
       gap: spacing.xxs,
     },
-    titleRow: {
+    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
@@ -102,7 +107,7 @@ function createStyles(theme: AppTheme) {
       ...typography.titleMedium,
       color: theme.colors.textSecondary,
     },
-    bio: {
+    note: {
       ...typography.bodyMedium,
       color: theme.colors.textTertiary,
     },

@@ -2,26 +2,31 @@ import { memo, useMemo } from 'react';
 import { AppIcon } from '@/shared/ui/icon';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import {
+  expenseCategoryIconCatalog,
+  resolveExpenseCategoryIconCode,
+} from '@/features/category/model/category-icon';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { AppTheme } from '@/shared/theme';
 import { radius } from '@/shared/theme/tokens/radius';
-
-import { categoryIconCatalog, type CategoryItem } from '../../../mock/category-data';
 import { toSoftColor } from '@/shared/utils/color';
 
 type CategoryBadgeProps = {
-  category: CategoryItem;
+  category: ExpenseCategory;
   onPress?: () => void;
 };
 
 export const CategoryBadge = memo(function CategoryBadgeComponent({ category, onPress }: CategoryBadgeProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const iconPreset = categoryIconCatalog[category.iconKey];
+  const iconCode = resolveExpenseCategoryIconCode(category);
+  const iconPreset = expenseCategoryIconCatalog[iconCode];
+  const colorValue = category.color ?? theme.colors.primary;
 
   const badgeContent = (
-    <View style={[styles.badge, { backgroundColor: toSoftColor(category.colorValue) }]}>
-      <AppIcon icon={iconPreset.icon} color={category.colorValue} size={20} strokeWidth={1.9} />
+    <View style={[styles.badge, { backgroundColor: toSoftColor(colorValue) }]}>
+      <AppIcon icon={iconPreset.icon} color={colorValue} size={20} strokeWidth={1.9} />
     </View>
   );
 

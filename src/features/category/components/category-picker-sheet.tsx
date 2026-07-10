@@ -3,28 +3,29 @@ import { AppIcon } from '@/shared/ui/icon';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  expenseCategoryIconCatalog,
+  resolveExpenseCategoryIconCode,
+} from '@/features/category/model/category-icon';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
 import { toSoftColor } from '@/shared/utils/color';
-import {
-  categoryIconCatalog,
-  customCategorySeed,
-  defaultCategorySeed,
-  type CategoryItem,
-} from '../../../mock/category-data';
 import { AppTheme } from '@/shared/theme';
 
 type CategoryPickerSheetProps = {
+  categories: ExpenseCategory[];
   isVisible: boolean;
   onClose: () => void;
-  onSelect: (category: CategoryItem) => void;
+  onSelect: (category: ExpenseCategory) => void;
   selectedCategoryId?: string;
 };
 
 export const CategoryPickerSheet = memo(function CategoryPickerSheetComponent({
+  categories,
   isVisible,
   onClose,
   onSelect,
@@ -33,6 +34,15 @@ export const CategoryPickerSheet = memo(function CategoryPickerSheetComponent({
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, insets.bottom), [insets.bottom, theme]);
+  const activeCategories = useMemo(() => categories.filter((category) => category.isActive), [categories]);
+  const defaultCategories = useMemo(
+    () => activeCategories.filter((category) => category.isDefault),
+    [activeCategories],
+  );
+  const customCategories = useMemo(
+    () => activeCategories.filter((category) => !category.isDefault),
+    [activeCategories],
+  );
 
   return (
     <Modal animationType='fade' transparent visible={isVisible} onRequestClose={onClose}>
@@ -52,14 +62,14 @@ export const CategoryPickerSheet = memo(function CategoryPickerSheetComponent({
             <Text style={styles.title}>Choose Category</Text>
 
             <CategoryPickerSection
-              items={defaultCategorySeed}
+              items={defaultCategories}
               selectedCategoryId={selectedCategoryId}
               title='Default List'
               onSelect={onSelect}
             />
 
             <CategoryPickerSection
-              items={customCategorySeed}
+              items={customCategories}
               selectedCategoryId={selectedCategoryId}
               title='Custom List'
               onSelect={onSelect}
@@ -72,8 +82,8 @@ export const CategoryPickerSheet = memo(function CategoryPickerSheetComponent({
 });
 
 type CategoryPickerSectionProps = {
-  items: CategoryItem[];
-  onSelect: (category: CategoryItem) => void;
+  items: ExpenseCategory[];
+  onSelect: (category: ExpenseCategory) => void;
   selectedCategoryId?: string;
   title: string;
 };
@@ -105,9 +115,9 @@ const CategoryPickerSection = memo(function CategoryPickerSectionComponent({
 });
 
 type CategoryOptionCardProps = {
-  category: CategoryItem;
+  category: ExpenseCategory;
   isSelected: boolean;
-  onPressCategory: (category: CategoryItem) => void;
+  onPressCategory: (category: ExpenseCategory) => void;
 };
 
 const CategoryOptionCard = memo(function CategoryOptionCardComponent({
@@ -117,7 +127,9 @@ const CategoryOptionCard = memo(function CategoryOptionCardComponent({
 }: CategoryOptionCardProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme, 0), [theme]);
-  const iconPreset = categoryIconCatalog[category.iconKey];
+  const iconCode = resolveExpenseCategoryIconCode(category);
+  const iconPreset = expenseCategoryIconCatalog[iconCode];
+  const colorValue = category.color ?? theme.colors.primary;
   const handlePress = useCallback(() => {
     onPressCategory(category);
   }, [category, onPressCategory]);
@@ -126,12 +138,12 @@ const CategoryOptionCard = memo(function CategoryOptionCardComponent({
     <Pressable onPress={handlePress} style={styles.cardPressable}>
       {({ pressed }) => (
         <View style={[styles.card, isSelected ? styles.cardSelected : null, pressed ? styles.cardPressed : null]}>
-          <View style={[styles.iconBadge, { backgroundColor: toSoftColor(category.colorValue) }]}>
-            <AppIcon icon={iconPreset.icon} color={category.colorValue} size={18} strokeWidth={2} />
+          <View style={[styles.iconBadge, { backgroundColor: toSoftColor(colorValue) }]}>
+            <AppIcon icon={iconPreset.icon} color={colorValue} size={18} strokeWidth={2} />
           </View>
 
           <Text numberOfLines={1} style={styles.cardLabel}>
-            {category.label}
+            {category.name}
           </Text>
         </View>
       )}

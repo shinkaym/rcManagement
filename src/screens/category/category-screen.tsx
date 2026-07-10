@@ -5,37 +5,38 @@ import { Alert, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-nati
 import { ActionCard } from '@/features/category/components/action-card';
 import { CategoryCard } from '@/features/category/components/category-card';
 import { CategoryEditorSheet, type CategoryEditorPayload } from '@/features/category/components/category-editor-sheet';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
-import {
-  customCategorySeed,
-  defaultCategorySeed,
-  type CategoryItem,
-} from '../../mock/category-data';
+import { expenseCategorySeed } from '../../mock/category-data';
 import { AppTheme } from '@/shared/theme';
 
 const addImageSource = require('../../../assets/images/add.png');
 
-type EditableSource = 'default' | 'custom';
-
-type SheetState = { mode: 'create' } | { categoryId: string; mode: 'edit'; source: EditableSource };
+type SheetState = { mode: 'create' } | { categoryId: string; mode: 'edit' };
 
 export function CategoryScreen() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [defaultCategories, setDefaultCategories] = useState(defaultCategorySeed);
-  const [customCategories, setCustomCategories] = useState(customCategorySeed);
+  const [categories, setCategories] = useState<ExpenseCategory[]>(expenseCategorySeed);
   const [sheetState, setSheetState] = useState<SheetState | null>(null);
 
   const sheetVisible = sheetState !== null;
+  const activeCategories = useMemo(() => categories.filter((category) => category.isActive), [categories]);
+  const defaultCategories = useMemo(
+    () => activeCategories.filter((category) => category.isDefault),
+    [activeCategories],
+  );
+  const customCategories = useMemo(
+    () => activeCategories.filter((category) => !category.isDefault),
+    [activeCategories],
+  );
   const editedCategory =
     sheetState?.mode === 'edit'
-      ? (sheetState.source === 'default' ? defaultCategories : customCategories).find(
-          (item) => item.id === sheetState.categoryId,
-        ) ?? null
+      ? categories.find((category) => category.id === sheetState.categoryId) ?? null
       : null;
   const editorMode = sheetState?.mode ?? 'create';
 
@@ -43,27 +44,16 @@ export function CategoryScreen() {
     setSheetState({ mode: 'create' });
   }, []);
 
-  const openEditSheet = useCallback((category: CategoryItem, source: EditableSource) => {
+  const openEditSheet = useCallback((category: ExpenseCategory) => {
+    if (category.isDefault) {
+      return;
+    }
+
     setSheetState({
       mode: 'edit',
-      source,
       categoryId: category.id,
     });
   }, []);
-
-  const openDefaultEditSheet = useCallback(
-    (category: CategoryItem) => {
-      openEditSheet(category, 'default');
-    },
-    [openEditSheet],
-  );
-
-  const openCustomEditSheet = useCallback(
-    (category: CategoryItem) => {
-      openEditSheet(category, 'custom');
-    },
-    [openEditSheet],
-  );
 
   const handleEditPlaceholderPress = useCallback(() => {
     Alert.alert(
@@ -78,35 +68,37 @@ export function CategoryScreen() {
 
   const handleConfirmSheet = useCallback((payload: CategoryEditorPayload) => {
     if (!sheetState || sheetState.mode === 'create') {
-      const nextCategory: CategoryItem = {
-        colorValue: payload.colorValue,
+      const now = new Date().toISOString();
+      const nextCategory: ExpenseCategory = {
+        code: null,
+        color: payload.color,
+        createdAt: now,
         id: `custom-${Date.now()}`,
-        iconKey: payload.iconKey,
-        label: payload.label,
+        icon: payload.icon,
+        isActive: true,
+        isDefault: false,
+        name: payload.name,
+        updatedAt: now,
       };
 
-      setCustomCategories((current) => [...current, nextCategory]);
+      setCategories((current) => [...current, nextCategory]);
       closeSheet();
       return;
     }
 
-    const updater = (items: CategoryItem[]) =>
-      items.map((item) =>
-        item.id === sheetState.categoryId
+    setCategories((current) =>
+      current.map((category) =>
+        category.id === sheetState.categoryId
           ? {
-              ...item,
-              colorValue: payload.colorValue,
-              iconKey: payload.iconKey,
-              label: payload.label,
+              ...category,
+              color: payload.color,
+              icon: payload.icon,
+              name: payload.name,
+              updatedAt: new Date().toISOString(),
             }
-          : item,
-      );
-
-    if (sheetState.source === 'default') {
-      setDefaultCategories(updater);
-    } else {
-      setCustomCategories(updater);
-    }
+          : category,
+      ),
+    );
 
     closeSheet();
   }, [closeSheet, sheetState]);
@@ -126,14 +118,14 @@ export function CategoryScreen() {
             <CategorySection
               items={defaultCategories}
               title='Default List'
-              onItemPress={openDefaultEditSheet}
+              itemDisabled
             />
 
             <View style={styles.sectionSpacer}>
               <Text style={styles.sectionTitle}>Custom List</Text>
               <View style={styles.grid}>
                 {customCategories.map((item) => (
-                  <CategoryCard key={item.id} item={item} onPressItem={openCustomEditSheet} />
+                  <CategoryCard key={item.id} item={item} onPressItem={openEditSheet} />
                 ))}
 
                 <ActionCard imageSource={addImageSource} label='Create' variant='dashed' onPress={openCreateSheet} />
@@ -162,12 +154,18 @@ export function CategoryScreen() {
 }
 
 type CategorySectionProps = {
-  items: CategoryItem[];
-  onItemPress: (item: CategoryItem) => void;
+  itemDisabled?: boolean;
+  items: ExpenseCategory[];
+  onItemPress?: (item: ExpenseCategory) => void;
   title: string;
 };
 
-const CategorySection = memo(function CategorySectionComponent({ items, onItemPress, title }: CategorySectionProps) {
+const CategorySection = memo(function CategorySectionComponent({
+  itemDisabled = false,
+  items,
+  onItemPress,
+  title,
+}: CategorySectionProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -176,7 +174,7 @@ const CategorySection = memo(function CategorySectionComponent({ items, onItemPr
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.grid}>
         {items.map((item) => (
-          <CategoryCard key={item.id} item={item} onPressItem={onItemPress} />
+          <CategoryCard disabled={itemDisabled} key={item.id} item={item} onPressItem={onItemPress} />
         ))}
       </View>
     </View>

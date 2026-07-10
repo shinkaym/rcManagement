@@ -3,11 +3,12 @@ import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
 import {
-  categoryColorPresets,
-  categoryIconGroups,
-  type CategoryIconKey,
-  type CategoryItem,
-} from '@/mock/category-data';
+  coerceExpenseCategoryIconCode,
+  expenseCategoryColorPresets,
+  expenseCategoryIconGroups,
+  type ExpenseCategoryIconCode,
+} from '@/features/category/model/category-icon';
+import type { ExpenseCategory } from '@/features/category/model/category.types';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { AppTheme } from '@/shared/theme';
 import { radius } from '@/shared/theme/tokens/radius';
@@ -19,13 +20,13 @@ import { ColorOptionButton } from './color-option-button';
 import { IconOptionButton } from './icon-option-button';
 
 export type CategoryEditorPayload = {
-  colorValue: string;
-  iconKey: CategoryIconKey;
-  label: string;
+  color: string;
+  icon: ExpenseCategoryIconCode;
+  name: string;
 };
 
 type CategoryEditorSheetProps = {
-  category?: CategoryItem | null;
+  category?: ExpenseCategory | null;
   mode: 'create' | 'edit';
   onClose: () => void;
   onConfirm: (payload: CategoryEditorPayload) => void;
@@ -33,9 +34,9 @@ type CategoryEditorSheetProps = {
 };
 
 const defaultDraft: CategoryEditorPayload = {
-  colorValue: '#F57C00',
-  iconKey: 'food',
-  label: '',
+  color: '#F57C00',
+  icon: 'food',
+  name: '',
 };
 
 export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
@@ -48,9 +49,9 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const sheetAnimation = useRef(new Animated.Value(0)).current;
-  const [draftName, setDraftName] = useState(defaultDraft.label);
-  const [draftColorValue, setDraftColorValue] = useState(defaultDraft.colorValue);
-  const [draftIconKey, setDraftIconKey] = useState<CategoryIconKey>(defaultDraft.iconKey);
+  const [draftName, setDraftName] = useState(defaultDraft.name);
+  const [draftColorValue, setDraftColorValue] = useState(defaultDraft.color);
+  const [draftIconCode, setDraftIconCode] = useState<ExpenseCategoryIconCode>(defaultDraft.icon);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
 
   const normalizedDraftColor = normalizeHexColor(draftColorValue);
@@ -84,17 +85,17 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
     const nextDraft =
       mode === 'edit' && category
         ? {
-            colorValue: category.colorValue,
-            iconKey: category.iconKey,
-            label: category.label,
+            color: category.color ?? defaultDraft.color,
+            icon: coerceExpenseCategoryIconCode(category.icon) ?? defaultDraft.icon,
+            name: category.name,
           }
         : defaultDraft;
 
-    setDraftName(nextDraft.label);
-    setDraftColorValue(nextDraft.colorValue);
-    setDraftIconKey(nextDraft.iconKey);
+    setDraftName(nextDraft.name);
+    setDraftColorValue(nextDraft.color);
+    setDraftIconCode(nextDraft.icon);
     setIsCustomPickerOpen(
-      !categoryColorPresets.includes(nextDraft.colorValue as (typeof categoryColorPresets)[number]),
+      !expenseCategoryColorPresets.includes(nextDraft.color as (typeof expenseCategoryColorPresets)[number]),
     );
   }, [category, mode, visible]);
 
@@ -103,8 +104,8 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
     setIsCustomPickerOpen(false);
   }, []);
 
-  const handleSelectIcon = useCallback((iconKey: CategoryIconKey) => {
-    setDraftIconKey(iconKey);
+  const handleSelectIcon = useCallback((iconCode: ExpenseCategoryIconCode) => {
+    setDraftIconCode(iconCode);
   }, []);
 
   function handleConfirm() {
@@ -115,9 +116,9 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
     }
 
     onConfirm({
-      colorValue: normalizedDraftColor,
-      iconKey: draftIconKey,
-      label: trimmedName,
+      color: normalizedDraftColor,
+      icon: draftIconCode,
+      name: trimmedName,
     });
   }
 
@@ -159,7 +160,7 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
               <Text style={styles.iconGroupTitle}>Color</Text>
 
               <View style={styles.colorGrid}>
-                {categoryColorPresets.map((colorValue) => (
+                {expenseCategoryColorPresets.map((colorValue) => (
                   <ColorOptionButton
                     key={colorValue}
                     colorValue={colorValue}
@@ -203,16 +204,16 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
               ) : null}
             </View>
 
-            {categoryIconGroups.map((group) => (
+            {expenseCategoryIconGroups.map((group) => (
               <View key={group.title} style={styles.iconGroup}>
                 <Text style={styles.iconGroupTitle}>{group.title}</Text>
                 <View style={styles.iconGrid}>
-                  {group.iconKeys.map((iconKey) => (
+                  {group.iconCodes.map((iconCode) => (
                     <IconOptionButton
-                      key={iconKey}
+                      key={iconCode}
                       accentColorValue={normalizedDraftColor}
-                      iconKey={iconKey}
-                      isSelected={draftIconKey === iconKey}
+                      iconCode={iconCode}
+                      isSelected={draftIconCode === iconCode}
                       onPressIcon={handleSelectIcon}
                     />
                   ))}

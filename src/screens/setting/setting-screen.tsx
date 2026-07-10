@@ -1,36 +1,46 @@
-import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { radius } from '@/theme/tokens/radius';
-import { spacing } from '@/theme/tokens/spacing';
-import { typography } from '@/theme/tokens/typography';
+import { radius } from '@/shared/theme/tokens/radius';
+import { spacing } from '@/shared/theme/tokens/spacing';
+import { typography } from '@/shared/theme/tokens/typography';
+
+import { SETTING_ROUTES } from '@/navigation/route-names';
+
+export type SettingDestination =
+  | typeof SETTING_ROUTES.MY_ACCOUNT
+  | typeof SETTING_ROUTES.MAP
+  | typeof SETTING_ROUTES.HELP
+  | typeof SETTING_ROUTES.ABOUT_US;
 
 const settingLinks = [
   {
     description: 'Manage your personal information and profile preferences.',
-    href: '/setting/my-account' as const,
+    route: SETTING_ROUTES.MY_ACCOUNT,
     title: 'My Account',
   },
   {
     description: 'Open the saved places and location tools tied to your account.',
-    href: '/setting/map' as const,
+    route: SETTING_ROUTES.MAP,
     title: 'Map',
   },
   {
     description: 'Reach support resources and current guidance for using the app.',
-    href: '/setting/help' as const,
+    route: SETTING_ROUTES.HELP,
     title: 'Help',
   },
   {
     description: 'Read product background and team information.',
-    href: '/setting/about-us' as const,
+    route: SETTING_ROUTES.ABOUT_US,
     title: 'About Us',
   },
 ] as const;
 
-export function SettingScreen() {
-  const router = useRouter();
+type SettingScreenProps = {
+  onSelectDestination: (destination: SettingDestination) => void;
+};
+
+export function SettingScreen({ onSelectDestination }: SettingScreenProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
@@ -41,7 +51,7 @@ export function SettingScreen() {
 
         <View style={styles.list}>
           {settingLinks.map((item) => (
-            <Pressable key={item.href} onPress={() => router.push(item.href)} style={styles.itemPressable}>
+            <Pressable key={item.route} onPress={() => onSelectDestination(item.route)} style={styles.itemPressable}>
               {({ pressed }) => (
                 <View style={[styles.itemCard, pressed ? styles.itemCardPressed : null]}>
                   <Text style={styles.itemTitle}>{item.title}</Text>

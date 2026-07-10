@@ -2,7 +2,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { radius } from '@/theme/tokens/radius';
+import { radius } from '@/shared/theme/tokens/radius';
 
 import { categoryIconCatalog, type CategoryItem } from '../../../mock/category-data';
 import { toSoftColor } from '@/shared/utils/color';

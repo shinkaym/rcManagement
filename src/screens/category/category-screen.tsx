@@ -1,13 +1,11 @@
 import { Settings02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Image } from 'expo-image';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
+import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { shellMetrics } from '@/shared/shell/shell-config';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -133,7 +131,7 @@ export function CategoryScreen() {
 
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <View style={styles.screen}>
         <ScrollView
           contentInsetAdjustmentBehavior='automatic'
@@ -373,7 +371,7 @@ function ActionCard({ icon, imageSource, label, onPress, variant = 'solid' }: Ac
           ]}
         >
           <View style={[styles.actionBadge, variant === 'edit' ? styles.actionBadgeEdit : null]}>
-            {imageSource ? <Image contentFit='contain' source={imageSource} style={styles.actionImage} /> : null}
+            {imageSource ? <Image resizeMode='contain' source={imageSource} style={styles.actionImage} /> : null}
 
             {icon ? (
               <HugeiconsIcon
@@ -479,7 +477,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     scrollContent: {
       paddingTop: spacing.sm,
       paddingRight: spacing.lg,
-      paddingBottom: shellMetrics.contentBottomInset,
+      paddingBottom: navigationMetrics.contentBottomInset,
       paddingLeft: spacing.lg,
     },
     contentColumn: {

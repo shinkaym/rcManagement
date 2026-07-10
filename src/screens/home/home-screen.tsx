@@ -1,11 +1,9 @@
-import { Image } from 'expo-image';
-import { StatusBar } from 'expo-status-bar';
 import { useMemo, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { shellMetrics } from '@/shared/shell/shell-config';
+import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -57,7 +55,7 @@ export function HomeScreen() {
 
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <View style={styles.screen}>
         <ScrollView
           contentInsetAdjustmentBehavior='automatic'
@@ -98,7 +96,7 @@ export function HomeScreen() {
           <Pressable onPress={() => {}} style={styles.floatingButtonPressable}>
             {({ pressed }) => (
               <View style={[styles.floatingButton, pressed ? styles.floatingButtonPressed : null]}>
-                <Image source={require('../../../assets/images/pen.png')} style={styles.penIcon} contentFit='contain' />
+                <Image source={require('../../../assets/images/pen.png')} resizeMode='contain' style={styles.penIcon} />
               </View>
             )}
           </Pressable>
@@ -253,7 +251,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     scrollContent: {
       paddingTop: spacing.sm,
       paddingRight: spacing.lg,
-      paddingBottom: shellMetrics.contentBottomInset,
+      paddingBottom: navigationMetrics.contentBottomInset,
       paddingLeft: spacing.lg,
     },
     sectionSpacer: {
@@ -372,15 +370,15 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     },
     floatingButtonContainer: {
       position: 'absolute',
-      right: shellMetrics.sideFloatingRight,
-      bottom: shellMetrics.sideFloatingBottom,
+      right: navigationMetrics.sideFloatingRight,
+      bottom: navigationMetrics.sideFloatingBottom,
     },
     floatingButtonPressable: {
       borderRadius: radius.pill,
     },
     floatingButton: {
-      width: shellMetrics.sideFloatingButtonSize,
-      height: shellMetrics.sideFloatingButtonSize,
+      width: navigationMetrics.sideFloatingButtonSize,
+      height: navigationMetrics.sideFloatingButtonSize,
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
@@ -391,8 +389,8 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       opacity: 0.9,
     },
     penIcon: {
-      width: shellMetrics.sideFloatingButtonSize - 6,
-      height: shellMetrics.sideFloatingButtonSize - 6,
+      width: navigationMetrics.sideFloatingButtonSize - 6,
+      height: navigationMetrics.sideFloatingButtonSize - 6,
     },
   });
 }

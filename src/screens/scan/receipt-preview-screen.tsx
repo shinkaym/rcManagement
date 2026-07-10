@@ -9,10 +9,8 @@ import {
   Store04Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryBadge } from '@/features/category/components/category-badge';
@@ -58,8 +56,11 @@ type CardFormState = {
 type TotalsFormState = Record<TotalFieldKey, string>;
 type EditableTotalsState = Record<TotalFieldKey, boolean>;
 
-export function ReceiptPreviewScreen() {
-  const router = useRouter();
+type ReceiptPreviewScreenProps = {
+  onCancel?: () => void;
+};
+
+export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
@@ -210,18 +211,9 @@ export function ReceiptPreviewScreen() {
     setIsMerchantCategoryPickerVisible(false);
   }
 
-  function handleCancel() {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    router.replace('/scan');
-  }
-
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <View style={styles.screen}>
         <ScrollView
           contentInsetAdjustmentBehavior='automatic'
@@ -446,7 +438,7 @@ export function ReceiptPreviewScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable onPress={handleCancel} style={styles.footerSecondaryPressable}>
+          <Pressable onPress={onCancel} style={styles.footerSecondaryPressable}>
             {({ pressed }) => (
               <View style={[styles.footerSecondaryButton, pressed ? styles.footerSecondaryButtonPressed : null]}>
                 <Text style={styles.footerSecondaryLabel}>Cancel</Text>

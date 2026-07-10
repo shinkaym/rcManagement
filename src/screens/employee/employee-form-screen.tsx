@@ -1,13 +1,11 @@
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Image } from 'expo-image';
-import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { shellMetrics } from '@/shared/shell/shell-config';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -52,7 +50,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
 
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <View style={styles.screen}>
         <ScrollView
           contentInsetAdjustmentBehavior='automatic'
@@ -63,7 +61,7 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
           <View style={styles.profileSection}>
             <View style={styles.avatarShell}>
               <View style={styles.avatarFrame}>
-                <Image source={seed.avatarUrl} style={styles.avatarImage} contentFit='cover' />
+                <Image source={{ uri: seed.avatarUrl }} style={styles.avatarImage} resizeMode='cover' />
               </View>
 
               <Pressable onPress={() => {}} style={styles.avatarEditPressable}>
@@ -288,7 +286,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     scrollContent: {
       paddingTop: spacing.sm,
       paddingRight: spacing.lg,
-      paddingBottom: shellMetrics.contentBottomInset,
+      paddingBottom: navigationMetrics.contentBottomInset,
       paddingLeft: spacing.lg,
       gap: spacing.md,
     },

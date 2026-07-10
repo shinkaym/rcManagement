@@ -1,12 +1,9 @@
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useMemo, useRef, useState } from 'react';
 import type { ScrollView as ScrollViewType, TextInput as TextInputType } from 'react-native';
-import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { shellMetrics } from '@/shared/shell/shell-config';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
@@ -17,8 +14,12 @@ import { employeeMockData } from '../../mock/employee-data';
 
 const previewItemLimit = 5;
 
-export function EmployeeScreen() {
-  const router = useRouter();
+type EmployeeScreenProps = {
+  onCreateEmployee: () => void;
+  onEditEmployee: (employeeId: string) => void;
+};
+
+export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScreenProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const scrollRef = useRef<ScrollViewType | null>(null);
@@ -62,15 +63,8 @@ export function EmployeeScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
-  function handleCreateEmployee() {
-    router.push('/employee/create');
-  }
-
   function handleEditEmployee(employee: EmployeeItem) {
-    router.push({
-      pathname: '/employee/[employeeId]',
-      params: { employeeId: employee.id },
-    });
+    onEditEmployee(employee.id);
   }
 
   const floatingTranslateY = floatingAnim.interpolate({
@@ -82,7 +76,7 @@ export function EmployeeScreen() {
 
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <View style={styles.screen}>
         <ScrollView
           ref={scrollRef}
@@ -112,8 +106,8 @@ export function EmployeeScreen() {
                 <View style={[styles.searchButton, pressed ? styles.searchButtonPressed : null]}>
                   <Image
                     source={require('../../../assets/images/search.png')}
+                    resizeMode='contain'
                     style={styles.searchIcon}
-                    contentFit='contain'
                   />
                 </View>
               )}
@@ -175,10 +169,10 @@ export function EmployeeScreen() {
             },
           ]}
         >
-          <Pressable onPress={handleCreateEmployee} style={styles.floatingButtonPressable}>
+          <Pressable onPress={onCreateEmployee} style={styles.floatingButtonPressable}>
             {({ pressed }) => (
               <View style={[styles.floatingButton, pressed ? styles.floatingButtonPressed : null]}>
-                <Image source={require('../../../assets/images/pen.png')} style={styles.penIcon} contentFit='contain' />
+                <Image source={require('../../../assets/images/pen.png')} resizeMode='contain' style={styles.penIcon} />
               </View>
             )}
           </Pressable>
@@ -201,7 +195,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     scrollContent: {
       paddingTop: spacing.sm,
       paddingRight: spacing.lg,
-      paddingBottom: shellMetrics.contentBottomInset,
+      paddingBottom: navigationMetrics.contentBottomInset,
       paddingLeft: spacing.lg,
     },
     searchRow: {
@@ -324,15 +318,15 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     },
     floatingButtonContainer: {
       position: 'absolute',
-      right: shellMetrics.sideFloatingRight,
-      bottom: shellMetrics.sideFloatingBottom,
+      right: navigationMetrics.sideFloatingRight,
+      bottom: navigationMetrics.sideFloatingBottom,
     },
     floatingButtonPressable: {
       borderRadius: radius.pill,
     },
     floatingButton: {
-      width: shellMetrics.sideFloatingButtonSize,
-      height: shellMetrics.sideFloatingButtonSize,
+      width: navigationMetrics.sideFloatingButtonSize,
+      height: navigationMetrics.sideFloatingButtonSize,
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
@@ -343,8 +337,8 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       opacity: 0.9,
     },
     penIcon: {
-      width: shellMetrics.sideFloatingButtonSize - 6,
-      height: shellMetrics.sideFloatingButtonSize - 6,
+      width: navigationMetrics.sideFloatingButtonSize - 6,
+      height: navigationMetrics.sideFloatingButtonSize - 6,
     },
   });
 }

@@ -3,9 +3,9 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { radius } from '@/theme/tokens/radius';
-import { spacing } from '@/theme/tokens/spacing';
-import { typography } from '@/theme/tokens/typography';
+import { radius } from '@/shared/theme/tokens/radius';
+import { spacing } from '@/shared/theme/tokens/spacing';
+import { typography } from '@/shared/theme/tokens/typography';
 
 import { toSoftColor } from '@/shared/utils/color';
 import {

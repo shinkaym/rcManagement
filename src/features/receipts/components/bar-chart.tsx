@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { ChartPoint } from '@/mock/report-data';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { formatChartValue, resolveChartInterval, resolveChartMaxY } from './chart-utils';
+import { formatChartValue, resolveChartInterval, resolveChartMaxY } from '@/shared/utils/chart';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';

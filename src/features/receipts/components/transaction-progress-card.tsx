@@ -21,7 +21,7 @@ export function TransactionProgressCard({
 }: TransactionProgressCardProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const progressWidth = `${Math.max(0, Math.min(progress, 1)) * 100}%`;
+  const progressWidth = `${Math.max(0, Math.min(progress, 1)) * 100}%` as `${number}%`;
 
   return (
     <View style={styles.container}>

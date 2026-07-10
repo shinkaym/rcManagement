@@ -1,12 +1,11 @@
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { radius } from '@/theme/tokens/radius';
-import { spacing } from '@/theme/tokens/spacing';
-import { typography } from '@/theme/tokens/typography';
+import { radius } from '@/shared/theme/tokens/radius';
+import { spacing } from '@/shared/theme/tokens/spacing';
+import { typography } from '@/shared/theme/tokens/typography';
 
 import type { EmployeeItem } from '../../../mock/employee-data';
 
@@ -22,7 +21,7 @@ export function EmployeeCard({ employee, onEdit }: EmployeeCardProps) {
   return (
     <View style={styles.container}>
       <View style={styles.avatarContainer}>
-        <Image source={employee.avatarUrl} style={styles.avatarImage} contentFit='cover' />
+        <Image source={{ uri: employee.avatarUrl }} style={styles.avatarImage} resizeMode='cover' />
       </View>
 
       <View style={styles.content}>

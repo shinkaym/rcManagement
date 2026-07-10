@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { radius } from '@/theme/tokens/radius';
-import { spacing } from '@/theme/tokens/spacing';
-import { typography } from '@/theme/tokens/typography';
+import { radius } from '@/shared/theme/tokens/radius';
+import { spacing } from '@/shared/theme/tokens/spacing';
+import { typography } from '@/shared/theme/tokens/typography';
 
 type SectionCollapseProps = {
   child: ReactNode;

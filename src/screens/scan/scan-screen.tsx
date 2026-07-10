@@ -69,7 +69,7 @@ export function ScanScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
-  const cameraRef = useRef<CameraView | null>(null);
+  const cameraRef = useRef<any>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [cameraFacing, setCameraFacing] = useState<'back' | 'front'>('back');
   const [cropRect, setCropRect] = useState<CropRect | null>(null);

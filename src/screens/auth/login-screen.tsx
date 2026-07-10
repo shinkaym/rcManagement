@@ -1,8 +1,5 @@
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { AppleLogoIcon, GoogleLogoIcon } from '@/shared/ui/icon';
@@ -11,15 +8,19 @@ import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 import { AppTheme } from '@/shared/theme';
 
-export function LoginScreen() {
-  const router = useRouter();
+type LoginScreenProps = {
+  onContinueWithApple: () => void;
+  onContinueWithGoogle: () => void;
+};
+
+export function LoginScreen({ onContinueWithApple, onContinueWithGoogle }: LoginScreenProps) {
   const theme = useAppTheme();
   const { height } = useWindowDimensions();
   const styles = createStyles(theme, Math.max(height - spacing.sm - spacing.lg - 32, 0));
 
   return (
     <>
-      <StatusBar style='light' />
+      <StatusBar barStyle='light-content' />
       <ScrollView
         contentInsetAdjustmentBehavior='automatic'
         keyboardShouldPersistTaps='handled'
@@ -29,7 +30,7 @@ export function LoginScreen() {
       >
         <View style={styles.contentShell}>
           <View style={styles.heroSection}>
-            <Image source={require('../../../assets/images/logo.png')} style={styles.logo} contentFit='contain' />
+            <Image source={require('../../../assets/images/logo.png')} style={styles.logo} resizeMode='contain' />
 
             <Text style={styles.heroTitle}>SCAN RECEIPTS</Text>
             <Text style={styles.heroSubtitle}>SIGN IN TO YOUR ACCOUNT</Text>
@@ -47,7 +48,7 @@ export function LoginScreen() {
                 variant='light'
                 styles={styles}
                 icon={<GoogleLogoIcon size={20} />}
-                onPress={() => router.replace('/home')}
+                onPress={onContinueWithGoogle}
               />
 
               <SocialSignInButton
@@ -55,7 +56,7 @@ export function LoginScreen() {
                 variant='dark'
                 styles={styles}
                 icon={<AppleLogoIcon color='#FFFFFF' size={20} />}
-                onPress={() => router.replace('/home')}
+                onPress={onContinueWithApple}
               />
             </View>
 

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { spacing } from '@/theme/tokens/spacing';
-import { typography } from '@/theme/tokens/typography';
+import { spacing } from '@/shared/theme/tokens/spacing';
+import { typography } from '@/shared/theme/tokens/typography';
 
 type SectionViewMoreProps = {
   hiddenCount: number;

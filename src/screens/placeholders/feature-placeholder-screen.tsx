@@ -1,8 +1,7 @@
-import { StatusBar } from 'expo-status-bar';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
+import { navigationMetrics } from '@/navigation/navigation-metrics';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { shellMetrics } from '@/shared/shell/shell-config';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
 
@@ -22,7 +21,7 @@ export function FeaturePlaceholderScreen({
 
   return (
     <>
-      <StatusBar style='dark' />
+      <StatusBar barStyle='dark-content' />
       <ScrollView
         contentInsetAdjustmentBehavior='automatic'
         style={styles.screen}
@@ -50,10 +49,10 @@ function createStyles(theme: ReturnType<typeof useAppTheme>, withBottomNavSpacin
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
       paddingBottom: withBottomNavSpacing
-        ? shellMetrics.bottomNavHeight +
-          shellMetrics.centerFabSize / 2 +
-          shellMetrics.centerFabGap +
-          shellMetrics.centerFabLabelHeight +
+        ? navigationMetrics.bottomNavHeight +
+          navigationMetrics.centerActionSize / 2 +
+          navigationMetrics.centerActionGap +
+          navigationMetrics.centerActionLabelHeight +
           spacing.sm
         : spacing.xl,
     },

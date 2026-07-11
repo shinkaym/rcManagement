@@ -2,23 +2,20 @@ import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { launchImageLibrary } from 'react-native-image-picker';
 import PhotoManipulator, { MimeType, RotationMode } from 'react-native-photo-manipulator';
 import { check, openSettings, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
-import { useCameraDevice, usePhotoOutput, type CameraRef } from 'react-native-vision-camera';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, useCameraDevice, usePhotoOutput, type CameraRef } from 'react-native-vision-camera';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Image, Platform, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
 
 import { CaptureModeView } from './components/capture-mode-view';
+import { CameraBackdrop } from './components/camera-backdrop';
 import { CropModeView } from './components/crop-mode-view';
 import { PreviewModeView } from './components/preview-mode-view';
-import { clamp, mapCropRectToImagePixels } from './scan-geometry';
+import { mapCropRectToImagePixels } from './scan-geometry';
 import { createStyles } from './scan-screen.styles';
 import type { CameraPermissionStatus, CropRect, ImageFrame, PreviewImageState, ScreenMode } from './scan-types';
-
-const minZoomLevel = 1;
-const maxZoomLevel = 3;
-const zoomStep = 0.25;
 
 type ScanScreenProps = {
   onBackToHome?: () => void;
@@ -43,15 +40,14 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
   const [mode, setMode] = useState<ScreenMode>('capture');
   const [previewImage, setPreviewImage] = useState<PreviewImageState | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [cameraPermissionStatus, setCameraPermissionStatus] = useState<CameraPermissionStatus>('checking');
-  const device = useCameraDevice(cameraFacing);
+  const device = useCameraDevice(cameraFacing, { physicalDevices: ['wide-angle'] });
   const hasCameraPermission = cameraPermissionStatus === 'granted';
 
-  const minAvailableZoom = Math.max(minZoomLevel, device?.minZoom ?? minZoomLevel);
-  const maxAvailableZoom = Math.max(minAvailableZoom, Math.min(maxZoomLevel, device?.maxZoom ?? maxZoomLevel));
   const shouldShowCameraOverlay =
     mode === 'capture' && (!hasCameraPermission || !device || !isCameraReady || isRetryingCamera);
+  const shouldRenderCamera = hasCameraPermission && !!device;
+  const isCaptureMode = mode === 'capture';
 
   const requestCameraAccess = useCallback(async () => {
     const permission = getCameraPermission();
@@ -107,21 +103,29 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     return () => clearTimeout(timeoutId);
   }, [statusMessage]);
 
-  useEffect(() => {
-    setZoomLevel((currentValue) => clamp(currentValue, minAvailableZoom, maxAvailableZoom));
-  }, [maxAvailableZoom, minAvailableZoom]);
-
   function showMessage(message: string) {
     setStatusMessage(message);
   }
 
-  function handleBackToHome() {
+  async function settleTorchBeforeLeavingCapture() {
+    if (mode !== 'capture' || !isFlashEnabled || !device?.hasTorch) {
+      return;
+    }
+
+    setIsFlashEnabled(false);
+
+    await waitForAnimationFrame();
+    await waitForAnimationFrame();
+  }
+
+  async function handleBackToHome() {
+    await settleTorchBeforeLeavingCapture();
     onBackToHome?.();
   }
 
-  function handleHeaderBackPress() {
+  async function handleHeaderBackPress() {
     if (mode === 'capture') {
-      handleBackToHome();
+      await handleBackToHome();
       return;
     }
 
@@ -130,6 +134,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
 
   function handleClosePreview() {
     setCropDraftImage(null);
+    setIsFlashEnabled(false);
     setIsCameraReady(false);
     setMode('capture');
     setPreviewImage(null);
@@ -137,20 +142,21 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
   }
 
   function handleToggleFlash() {
+    if (mode !== 'capture' || !isCameraReady || isWorking || isCapturing || !device?.hasTorch) {
+      return;
+    }
+
     setIsFlashEnabled((currentValue) => !currentValue);
   }
 
-  function handleSwitchCamera() {
+  async function handleSwitchCamera() {
+    if (mode !== 'capture') {
+      return;
+    }
+
+    await settleTorchBeforeLeavingCapture();
     setIsCameraReady(false);
     setCameraFacing((currentValue) => (currentValue === 'back' ? 'front' : 'back'));
-  }
-
-  function handleZoomStep(direction: 'in' | 'out') {
-    setZoomLevel((currentValue) => {
-      const nextValue = direction === 'in' ? currentValue + zoomStep : currentValue - zoomStep;
-
-      return clamp(Number(nextValue.toFixed(2)), minAvailableZoom, maxAvailableZoom);
-    });
   }
 
   async function handleOpenGallery() {
@@ -188,6 +194,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
         return;
       }
 
+      await settleTorchBeforeLeavingCapture();
       setCropDraftImage(null);
       setMode('preview');
       setPreviewImage(
@@ -223,6 +230,7 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
         return;
       }
 
+      await settleTorchBeforeLeavingCapture();
       setCropDraftImage(null);
       setMode('preview');
       setPreviewImage(await createPreviewImageState(capturedUri));
@@ -425,58 +433,59 @@ export function ScanScreen({ onBackToHome, onSendImage }: ScanScreenProps) {
     <>
       <StatusBar barStyle='light-content' />
       <View style={styles.screen}>
-        {mode === 'capture' ? (
+        {shouldRenderCamera ? (
+          <CaptureCameraLayer
+            cameraRef={cameraRef}
+            device={device}
+            isActive={isCaptureMode}
+            isCameraReady={isCameraReady}
+            isFlashEnabled={isFlashEnabled}
+            onCameraError={() => showMessage('Unable to start camera right now.')}
+            onPreviewStarted={() => setIsCameraReady(true)}
+            onPreviewStopped={() => setIsCameraReady(false)}
+            photoOutput={photoOutput}
+          />
+        ) : null}
+
+        {isCaptureMode && !shouldRenderCamera ? <CameraBackdrop /> : null}
+
+        {isCaptureMode ? (
           <CaptureModeView
             cameraPermissionStatus={cameraPermissionStatus}
-            cameraRef={cameraRef}
-            currentZoomLevel={zoomLevel}
-            device={device}
             hasCameraPermission={hasCameraPermission}
+            hasCameraDevice={!!device}
             isCameraReady={isCameraReady}
             isCapturing={isCapturing}
             isFlashEnabled={isFlashEnabled}
             isRetryingCamera={isRetryingCamera}
             isWorking={isWorking}
-            maxZoomValue={maxAvailableZoom}
             message={statusMessage}
-            minZoomValue={minAvailableZoom}
-            photoOutput={photoOutput}
             shouldShowCameraOverlay={shouldShowCameraOverlay}
-            zoomLevel={zoomLevel}
             onBackPress={handleHeaderBackPress}
             onCapture={handleCaptureImage}
-            onCameraError={() => showMessage('Unable to start camera right now.')}
             onOpenGallery={handleOpenGallery}
             onOpenSettings={() => {
               openSettings('application').catch(() => {
                 showMessage('Unable to open settings right now.');
               });
             }}
-            onPreviewStarted={() => setIsCameraReady(true)}
-            onPreviewStopped={() => setIsCameraReady(false)}
             onRetryCamera={handleRetryCamera}
             onSwitchCamera={handleSwitchCamera}
             onToggleFlash={handleToggleFlash}
-            onZoomIn={() => handleZoomStep('in')}
-            onZoomOut={() => handleZoomStep('out')}
           />
         ) : null}
 
         {mode === 'preview' && previewImage ? (
           <PreviewModeView
             image={previewImage}
-            isFlashEnabled={isFlashEnabled}
             isWorking={isWorking}
             message={statusMessage}
             onBackPress={handleHeaderBackPress}
             onCrop={handleEnterCropMode}
             onDownload={handleDownloadImage}
             onEdit={handlePreviewPlaceholderAction}
-            onOpenGallery={handleOpenGallery}
             onRotate={handleRotatePreviewImage}
             onSend={handleSendImage}
-            onSwitchCamera={handleSwitchCamera}
-            onToggleFlash={handleToggleFlash}
           />
         ) : null}
 
@@ -532,4 +541,53 @@ function ensureFileUri(uri?: string) {
   }
 
   return `file://${uri}`;
+}
+
+function waitForAnimationFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+type CaptureCameraLayerProps = {
+  cameraRef: RefObject<CameraRef | null>;
+  device: NonNullable<ReturnType<typeof useCameraDevice>>;
+  isActive: boolean;
+  isCameraReady: boolean;
+  isFlashEnabled: boolean;
+  onCameraError: () => void;
+  onPreviewStarted: () => void;
+  onPreviewStopped: () => void;
+  photoOutput: ReturnType<typeof usePhotoOutput>;
+};
+
+function CaptureCameraLayer({
+  cameraRef,
+  device,
+  isActive,
+  isCameraReady,
+  isFlashEnabled,
+  onCameraError,
+  onPreviewStarted,
+  onPreviewStopped,
+  photoOutput,
+}: CaptureCameraLayerProps) {
+  const styles = createStyles(useAppTheme(), 0, 0);
+  const torchMode = isActive && isCameraReady && isFlashEnabled && device.hasTorch ? 'on' : undefined;
+
+  return (
+    <Camera
+      ref={cameraRef}
+      style={styles.cameraPreview}
+      device={device}
+      implementationMode='compatible'
+      isActive={isActive}
+      outputs={[photoOutput]}
+      resizeMode='cover'
+      torchMode={torchMode}
+      onError={onCameraError}
+      onPreviewStarted={onPreviewStarted}
+      onPreviewStopped={onPreviewStopped}
+    />
+  );
 }

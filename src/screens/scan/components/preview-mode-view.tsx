@@ -13,34 +13,26 @@ import { PreviewImageStage } from './preview-image-stage';
 
 type PreviewModeViewProps = {
   image: PreviewImageState;
-  isFlashEnabled: boolean;
   isWorking: boolean;
   message: string | null;
   onBackPress: () => void;
   onCrop: () => void;
   onDownload: () => void;
   onEdit: () => void;
-  onOpenGallery: () => void;
   onRotate: () => void;
   onSend: () => void;
-  onSwitchCamera: () => void;
-  onToggleFlash: () => void;
 };
 
 export const PreviewModeView = memo(function PreviewModeViewComponent({
   image,
-  isFlashEnabled,
   isWorking,
   message,
   onBackPress,
   onCrop,
   onDownload,
   onEdit,
-  onOpenGallery,
   onRotate,
   onSend,
-  onSwitchCamera,
-  onToggleFlash,
 }: PreviewModeViewProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -52,16 +44,12 @@ export const PreviewModeView = memo(function PreviewModeViewComponent({
 
       <View style={styles.content}>
         <ScanHeader
-          isFlashEnabled={isFlashEnabled}
           isWorking={isWorking}
           mode='preview'
           onBackPress={onBackPress}
           onCrop={onCrop}
           onEdit={onEdit}
-          onOpenGallery={onOpenGallery}
           onRotate={onRotate}
-          onSwitchCamera={onSwitchCamera}
-          onToggleFlash={onToggleFlash}
         />
 
         <PreviewImageStage image={image} />

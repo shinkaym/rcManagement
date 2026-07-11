@@ -1,5 +1,4 @@
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
-import { AppIcon } from '@/shared/ui/icon';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,6 +10,7 @@ import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppButton } from '@/shared/ui/button';
 
 import { employeeMockData } from '../../mock/employee-data';
 import { AppTheme } from '@/shared/theme';
@@ -141,14 +141,12 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
           </FieldStack>
 
           <View style={styles.actionsRow}>
-            <Pressable onPress={onClose} style={styles.primaryPressable}>
-              {({ pressed }) => (
-                <View style={[styles.primaryButton, pressed ? styles.primaryButtonPressed : null]}>
-                  <AppIcon icon={PencilEdit02Icon} size={18} color={staticColors.white} strokeWidth={2.1} />
-                  <Text style={styles.primaryButtonLabel}>{mode === 'edit' ? 'Save' : 'Create'}</Text>
-                </View>
-              )}
-            </Pressable>
+            <AppButton
+              icon={PencilEdit02Icon}
+              label={mode === 'edit' ? 'Save' : 'Create'}
+              onPress={onClose}
+              size='lg'
+            />
           </View>
         </ScrollView>
       </View>
@@ -335,27 +333,6 @@ function createStyles(theme: AppTheme) {
     },
     actionsRow: {
       marginTop: spacing.sm,
-    },
-    primaryPressable: {
-      borderRadius: radius.lg,
-    },
-    primaryButton: {
-      minHeight: 50,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      borderRadius: radius.lg,
-      borderCurve: 'continuous',
-      backgroundColor: theme.colors.primary,
-      boxShadow: theme.shadow.accentStrong,
-    },
-    primaryButtonPressed: {
-      opacity: 0.92,
-    },
-    primaryButtonLabel: {
-      ...typography.titleMedium,
-      color: staticColors.white,
     },
   });
 }

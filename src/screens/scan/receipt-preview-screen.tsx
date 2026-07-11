@@ -1,4 +1,6 @@
 import {
+  Add01Icon,
+  BankIcon,
   Cash01Icon,
   CreditCardIcon,
   Edit02Icon,
@@ -7,6 +9,7 @@ import {
   PencilEdit02Icon,
   ShoppingBag01Icon,
   Store04Icon,
+  Wallet02Icon,
 } from '@hugeicons/core-free-icons';
 import { AppIcon } from '@/shared/ui/icon';
 import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
@@ -16,14 +19,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryBadge } from '@/features/category/components/category-badge';
 import { CategoryPickerSheet } from '@/features/category/components/category-picker-sheet';
 import type { ExpenseCategory } from '@/features/category/model/category.types';
-import { SegmentTabs } from '@/features/receipts/components/segment-tabs';
 import { expenseCategorySeed } from '@/mock/category-data';
 import { receiptPreviewSeed } from '@/mock/receipt-data';
 import { useAppTheme } from '@/shared/hooks/use-app-theme';
-import { staticColors } from '@/shared/theme/tokens/colors';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppButton } from '@/shared/ui/button';
+import { AppChip } from '@/shared/ui/chip';
 
 import { ItemsEditDialog } from '../../features/receipts/components/items-edit-dialog';
 import type { Receipt, ReceiptItem } from '../../features/receipts/model/receipt.types';
@@ -40,7 +43,7 @@ import { AppTheme } from '@/shared/theme';
 const footerHeight = 116;
 
 type HugeIcon = typeof Store04Icon;
-type PaymentMethod = 'cash' | 'card';
+type PaymentMethod = NonNullable<Receipt['paymentMethodType']>;
 type TotalFieldKey = 'discount' | 'tax' | 'tips';
 type EditableTotalsState = Record<TotalFieldKey, boolean>;
 
@@ -57,6 +60,8 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
   const [isMerchantEditing, setIsMerchantEditing] = useState(false);
   const [isMerchantCategoryPickerVisible, setIsMerchantCategoryPickerVisible] = useState(false);
   const [isItemsDialogVisible, setIsItemsDialogVisible] = useState(false);
+  const [isTagInputVisible, setIsTagInputVisible] = useState(false);
+  const [draftTagName, setDraftTagName] = useState('');
   const [editableTotals, setEditableTotals] = useState<EditableTotalsState>({
     tax: false,
     tips: false,
@@ -67,14 +72,19 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     receipt.category ??
     availableCategories.find((category) => category.id === receipt.categoryId) ??
     availableCategories[0];
-  const paymentMethod = receipt.paymentMethodType === 'CASH' ? 'cash' : 'card';
+  const selectedPaymentMethod = receipt.paymentMethodType ?? 'OTHER';
+  const isCardPaymentSelected = selectedPaymentMethod === 'CARD';
   const subtotal = useMemo(() => parseDecimalValue(receipt.subtotalAmount), [receipt.subtotalAmount]);
   const totalAmount = useMemo(() => parseDecimalValue(receipt.totalAmount), [receipt.totalAmount]);
-  const paymentMethodTabs = [
-    { icon: Cash01Icon, label: 'Cash', value: 'cash' as const },
-    { icon: CreditCardIcon, label: 'Card', value: 'card' as const },
+  const paymentMethodOptions = [
+    { icon: Cash01Icon, label: 'Cash', value: 'CASH' as const },
+    { icon: CreditCardIcon, label: 'Card', value: 'CARD' as const },
+    { icon: BankIcon, label: 'Bank', value: 'BANK_TRANSFER' as const },
+    { icon: Wallet02Icon, label: 'Wallet', value: 'DIGITAL_WALLET' as const },
+    { icon: Payment01Icon, label: 'Other', value: 'OTHER' as const },
   ];
   const receiptDateLabel = useMemo(() => formatReceiptDateDisplay(receipt.receiptDate), [receipt.receiptDate]);
+  const totalsCurrencyPrefix = receipt.currency;
 
   function updateReceipt(updater: (currentValue: Receipt) => Receipt) {
     setReceipt((currentValue) => recalculateReceipt(updater(currentValue)));
@@ -107,11 +117,11 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
   function handlePaymentMethodChange(nextValue: PaymentMethod) {
     updateReceipt((currentValue) => ({
       ...currentValue,
-      paymentMethodType: nextValue === 'cash' ? 'CASH' : 'CARD',
-      paymentMethodName: nextValue === 'cash' ? null : currentValue.paymentMethodName ?? '',
-      paymentCardLast4: nextValue === 'cash' ? null : currentValue.paymentCardLast4 ?? '',
+      paymentMethodType: nextValue,
+      paymentMethodName: nextValue === 'CARD' ? currentValue.paymentMethodName ?? '' : null,
+      paymentCardLast4: nextValue === 'CARD' ? currentValue.paymentCardLast4 ?? '' : null,
       paymentRawText:
-        nextValue === 'cash'
+        nextValue !== 'CARD'
           ? null
           : buildPaymentRawText(currentValue.paymentMethodName ?? '', currentValue.paymentCardLast4 ?? ''),
     }));
@@ -200,6 +210,55 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     setIsMerchantCategoryPickerVisible(false);
   }
 
+  function handleStartAddingTag() {
+    setDraftTagName('');
+    setIsTagInputVisible(true);
+  }
+
+  function handleTagDraftChange(value: string) {
+    if (value.includes(',')) {
+      const [nextTagName] = value.split(',');
+      handleCommitTag(nextTagName);
+
+      return;
+    }
+
+    setDraftTagName(value);
+  }
+
+  function handleCommitTag(rawValue?: string) {
+    const normalizedValue = normalizeTagName(rawValue ?? draftTagName);
+
+    setDraftTagName('');
+    setIsTagInputVisible(false);
+
+    if (!normalizedValue) {
+      return;
+    }
+
+    updateReceipt((currentValue) => {
+      const hasDuplicateTag = currentValue.tagNames.some(
+        (tagName) => tagName.localeCompare(normalizedValue, undefined, { sensitivity: 'accent' }) === 0,
+      );
+
+      if (hasDuplicateTag) {
+        return currentValue;
+      }
+
+      return {
+        ...currentValue,
+        tagNames: [...currentValue.tagNames, normalizedValue],
+      };
+    });
+  }
+
+  function handleRemoveTag(tagNameToRemove: string) {
+    updateReceipt((currentValue) => ({
+      ...currentValue,
+      tagNames: currentValue.tagNames.filter((tagName) => tagName !== tagNameToRemove),
+    }));
+  }
+
   return (
     <>
       <StatusBar barStyle='dark-content' />
@@ -256,7 +315,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
 
                   <View style={styles.columnField}>
                     <Text style={styles.fieldLabel}>DATE</Text>
-                    <MerchantDateField value={receiptDateLabel} onPress={() => {}} />
+                    <MerchantDateField value={receiptDateLabel} />
                   </View>
                 </View>
 
@@ -346,39 +405,73 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
             <SectionHeader
               icon={Payment01Icon}
               title='Payment Method'
-              trailing={
-                <View style={styles.paymentMethodTabsWrap}>
-                  <SegmentTabs
-                    items={paymentMethodTabs}
-                    selectedValue={paymentMethod}
-                    onChange={handlePaymentMethodChange}
-                  />
-                </View>
-              }
+              trailing={<AppChip label={receipt.currency} variant='outline' />}
             />
 
-            {paymentMethod === 'card' ? (
-              <View style={styles.paymentInputsRow}>
-                <View style={styles.columnField}>
-                  <Text style={styles.fieldLabel}>PAYMENT NAME</Text>
-                  <ReceiptInput
-                    value={receipt.paymentMethodName ?? ''}
-                    onChangeText={(value) => handleCardFieldChange('paymentMethodName', value)}
-                    placeholder='e.g. VISA'
+            <View style={styles.sectionBody}>
+              <View style={styles.paymentMethodChips}>
+                {paymentMethodOptions.map((item) => (
+                  <AppChip
+                    key={item.value}
+                    icon={item.icon}
+                    isSelected={item.value === selectedPaymentMethod}
+                    label={item.label}
+                    onPress={() => handlePaymentMethodChange(item.value)}
+                    variant='outline'
                   />
-                </View>
-
-                <View style={styles.columnField}>
-                  <Text style={styles.fieldLabel}>LAST 4 DIGITS</Text>
-                  <ReceiptInput
-                    value={receipt.paymentCardLast4 ?? ''}
-                    onChangeText={(value) => handleCardFieldChange('lastFourDigits', value)}
-                    placeholder='Last 4 digits'
-                    keyboardType='number-pad'
-                  />
-                </View>
+                ))}
               </View>
-            ) : null}
+
+              {isCardPaymentSelected ? (
+                <View style={styles.paymentInputsRow}>
+                  <View style={styles.columnField}>
+                    <Text style={styles.fieldLabel}>PAYMENT NAME</Text>
+                    <ReceiptInput
+                      value={receipt.paymentMethodName ?? ''}
+                      onChangeText={(value) => handleCardFieldChange('paymentMethodName', value)}
+                      placeholder='e.g. VISA'
+                    />
+                  </View>
+
+                  <View style={styles.columnField}>
+                    <Text style={styles.fieldLabel}>LAST 4 DIGITS</Text>
+                    <ReceiptInput
+                      value={receipt.paymentCardLast4 ?? ''}
+                      onChangeText={(value) => handleCardFieldChange('lastFourDigits', value)}
+                      placeholder='Last 4 digits'
+                      keyboardType='number-pad'
+                    />
+                  </View>
+                </View>
+              ) : null}
+
+            </View>
+          </SectionCard>
+
+          <SectionCard>
+            <SectionHeader icon={Note01Icon} title='Tags' />
+
+            <View style={styles.tagsWrap}>
+              {receipt.tagNames.map((tagName) => (
+                <AppChip key={tagName} label={tagName} onRemove={() => handleRemoveTag(tagName)} />
+              ))}
+
+              {isTagInputVisible ? (
+                <TextInput
+                  autoFocus
+                  value={draftTagName}
+                  onBlur={() => handleCommitTag()}
+                  onChangeText={handleTagDraftChange}
+                  onSubmitEditing={() => handleCommitTag()}
+                  placeholder='New tag'
+                  placeholderTextColor={theme.colors.textHint}
+                  returnKeyType='done'
+                  style={styles.tagInput}
+                />
+              ) : (
+                <AppChip icon={Add01Icon} label='Add tag' onPress={handleStartAddingTag} variant='dashed' />
+              )}
+            </View>
           </SectionCard>
 
           <SectionCard>
@@ -406,6 +499,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Tax'
                 value={receipt.taxAmount}
                 currencyCode={receipt.currency}
+                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('tax', value)}
                 onEdit={() => handleEnableTotalEdit('tax')}
               />
@@ -414,6 +508,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Tips'
                 value={receipt.tipAmount}
                 currencyCode={receipt.currency}
+                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('tips', value)}
                 onEdit={() => handleEnableTotalEdit('tips')}
               />
@@ -422,6 +517,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Discount'
                 value={receipt.discountAmount}
                 currencyCode={receipt.currency}
+                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('discount', value)}
                 onEdit={() => handleEnableTotalEdit('discount')}
                 isNegative
@@ -445,21 +541,13 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable onPress={onCancel} style={styles.footerSecondaryPressable}>
-            {({ pressed }) => (
-              <View style={[styles.footerSecondaryButton, pressed ? styles.footerSecondaryButtonPressed : null]}>
-                <Text style={styles.footerSecondaryLabel}>Cancel</Text>
-              </View>
-            )}
-          </Pressable>
+          <View style={styles.footerSecondarySlot}>
+            <AppButton label='Cancel' onPress={onCancel} size='lg' variant='secondary' />
+          </View>
 
-          <Pressable onPress={() => {}} style={styles.footerPrimaryPressable}>
-            {({ pressed }) => (
-              <View style={[styles.footerPrimaryButton, pressed ? styles.footerPrimaryButtonPressed : null]}>
-                <Text style={styles.footerPrimaryLabel}>Confirm & Add</Text>
-              </View>
-            )}
-          </Pressable>
+          <View style={styles.footerPrimarySlot}>
+            <AppButton label='Confirm & Add' onPress={() => {}} size='lg' />
+          </View>
         </View>
 
         <ItemsEditDialog
@@ -551,13 +639,21 @@ const SectionEditButton = memo(function SectionEditButtonComponent({
 });
 
 type MerchantDateFieldProps = {
-  onPress: () => void;
+  onPress?: () => void;
   value: string;
 };
 
 const MerchantDateField = memo(function MerchantDateFieldComponent({ onPress, value }: MerchantDateFieldProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme, 0, 0);
+
+  if (!onPress) {
+    return (
+      <View style={styles.dateField}>
+        <Text style={styles.dateFieldValue}>{value}</Text>
+      </View>
+    );
+  }
 
   return (
     <Pressable onPress={onPress} style={styles.dateFieldPressable}>
@@ -614,13 +710,17 @@ const ReceiptInput = memo(function ReceiptInputComponent({
       placeholderTextColor={theme.colors.textHint}
       multiline={multiline}
       textAlignVertical={multiline ? 'top' : 'center'}
-      style={[styles.receiptInput, multiline ? styles.receiptInputMultiline : null]}
+      style={[
+        styles.receiptInput,
+        multiline ? styles.receiptInputMultiline : styles.receiptInputSingleLine,
+      ]}
     />
   );
 });
 
 type EditableTotalRowProps = {
   currencyCode: Receipt['currency'];
+  currencyPrefix: string;
   isEditing: boolean;
   isNegative?: boolean;
   label: string;
@@ -631,6 +731,7 @@ type EditableTotalRowProps = {
 
 const EditableTotalRow = memo(function EditableTotalRowComponent({
   currencyCode,
+  currencyPrefix,
   isEditing,
   isNegative = false,
   label,
@@ -650,7 +751,7 @@ const EditableTotalRow = memo(function EditableTotalRowComponent({
 
       {isEditing ? (
         <View style={styles.totalInputWrapper}>
-          <Text style={styles.totalInputPrefix}>{isNegative ? '-$' : '$'}</Text>
+          <Text style={styles.totalInputPrefix}>{isNegative ? `-${currencyPrefix}` : currencyPrefix}</Text>
           <TextInput
             value={value}
             onChangeText={onChangeText}
@@ -690,10 +791,10 @@ function buildPaymentRawText(paymentMethodName: string, lastFourDigits: string) 
   }
 
   if (!trimmedPaymentMethodName) {
-    return `•••• ${trimmedLastFourDigits}`;
+    return `**** ${trimmedLastFourDigits}`;
   }
 
-  return `${trimmedPaymentMethodName} •••• ${trimmedLastFourDigits}`;
+  return `${trimmedPaymentMethodName} **** ${trimmedLastFourDigits}`;
 }
 
 function formatReceiptDateDisplay(receiptDate: string) {
@@ -708,6 +809,10 @@ function formatReceiptDateDisplay(receiptDate: string) {
     month: 'short',
     year: 'numeric',
   }).format(parsedDate);
+}
+
+function normalizeTagName(tagName: string) {
+  return tagName.replace(/,+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
@@ -779,9 +884,6 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
     },
     sectionHeaderTrailing: {
       marginLeft: spacing.sm,
-    },
-    paymentMethodTabsWrap: {
-      width: 150,
     },
     sectionEditPressable: {
       borderRadius: radius.md,
@@ -892,15 +994,19 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
     receiptInput: {
       minHeight: 36,
       paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
       borderRadius: radius.md,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surfaceAlt,
       color: theme.colors.textSecondary,
       ...typography.bodyLarge,
     },
+    receiptInputSingleLine: {
+      height: 40,
+      paddingVertical: 0,
+    },
     receiptInputMultiline: {
       minHeight: 92,
+      paddingVertical: spacing.sm,
     },
     itemsHeaderRow: {
       flexDirection: 'row',
@@ -958,6 +1064,31 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
       flexDirection: 'row',
       gap: spacing.md,
     },
+    paymentMethodChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    tagsWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    tagInput: {
+      minWidth: 108,
+      maxWidth: 156,
+      height: 40,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 0,
+      borderRadius: radius.pill,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: theme.colors.borderAlt,
+      backgroundColor: theme.colors.surfaceAlt,
+      color: theme.colors.textSecondary,
+      textAlignVertical: 'center',
+      ...typography.labelLarge,
+    },
     totalsRows: {
       gap: spacing.md,
     },
@@ -1002,8 +1133,10 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
     },
     totalInput: {
       flex: 1,
-      minHeight: 40,
+      height: 40,
+      paddingVertical: 0,
       color: theme.colors.textSecondary,
+      textAlignVertical: 'center',
       ...typography.titleMedium,
     },
     summaryDivider: {
@@ -1050,46 +1183,11 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
       borderTopColor: 'rgba(225, 227, 228, 0.9)',
       backgroundColor: 'rgba(253, 253, 248, 0.98)',
     },
-    footerSecondaryPressable: {
+    footerSecondarySlot: {
       flex: 1,
-      borderRadius: radius.lg,
     },
-    footerSecondaryButton: {
-      minHeight: 52,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.lg,
-      borderCurve: 'continuous',
-      borderWidth: 1.5,
-      borderColor: theme.colors.secondary,
-      backgroundColor: theme.colors.surface,
-    },
-    footerSecondaryButtonPressed: {
-      opacity: 0.9,
-    },
-    footerSecondaryLabel: {
-      ...typography.titleMedium,
-      color: theme.colors.secondary,
-    },
-    footerPrimaryPressable: {
+    footerPrimarySlot: {
       flex: 1.7,
-      borderRadius: radius.lg,
-    },
-    footerPrimaryButton: {
-      minHeight: 52,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.lg,
-      borderCurve: 'continuous',
-      backgroundColor: theme.colors.primary,
-      boxShadow: theme.shadow.accent,
-    },
-    footerPrimaryButtonPressed: {
-      opacity: 0.92,
-    },
-    footerPrimaryLabel: {
-      ...typography.titleMedium,
-      color: staticColors.white,
     },
   });
 }

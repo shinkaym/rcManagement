@@ -52,7 +52,7 @@ export const receiptPreviewSeed: Receipt = {
   source: 'MANUAL',
   status: 'NEEDS_REVIEW',
   subtotalAmount: '18.25',
-  tagNames: [],
+  tagNames: ['fuel', 'travel'],
   taxAmount: '12.00',
   tipAmount: '12.00',
   totalAmount: '42.25',

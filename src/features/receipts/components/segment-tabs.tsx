@@ -16,22 +16,38 @@ export type SegmentTabItem<T> = {
 };
 
 type SegmentTabsProps<T> = {
+  isWrapped?: boolean;
   items: SegmentTabItem<T>[];
+  itemWidth?: `${number}%` | number;
   onChange: (value: T) => void;
   selectedValue: T;
 };
 
-function SegmentTabsComponent<T>({ items, onChange, selectedValue }: SegmentTabsProps<T>) {
+function SegmentTabsComponent<T>({
+  isWrapped = false,
+  items,
+  itemWidth = '48%',
+  onChange,
+  selectedValue,
+}: SegmentTabsProps<T>) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isWrapped ? styles.containerWrapped : null]}>
       {items.map((item) => {
         const isSelected = item.value === selectedValue;
 
         return (
-          <Pressable key={String(item.value)} onPress={() => onChange(item.value)} style={styles.buttonPressable}>
+          <Pressable
+            key={String(item.value)}
+            onPress={() => onChange(item.value)}
+            style={[
+              styles.buttonPressable,
+              isWrapped ? styles.buttonPressableWrapped : null,
+              isWrapped ? { width: itemWidth } : null,
+            ]}
+          >
             {({ pressed }) => (
               <View
                 style={[
@@ -72,10 +88,19 @@ function createStyles(theme: AppTheme) {
       borderColor: theme.colors.borderAlt,
       backgroundColor: theme.colors.surface,
     },
+    containerWrapped: {
+      flexWrap: 'wrap',
+      gap: spacing.xxs,
+    },
     buttonPressable: {
       flex: 1,
       borderRadius: radius.pill,
       overflow: 'hidden',
+    },
+    buttonPressableWrapped: {
+      flexGrow: 1,
+      flexBasis: 'auto',
+      flexShrink: 0,
     },
     button: {
       paddingHorizontal: spacing.md,

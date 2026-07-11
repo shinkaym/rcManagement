@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
-import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import type { Employee } from '@/features/employee/model/employee.types';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
@@ -8,6 +8,7 @@ import { useAppTheme } from '@/shared/hooks/use-app-theme';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppInput } from '@/shared/ui/input';
 import { BackToTop } from '@/shared/ui/layout/back-to-top';
 import { LoadingMore } from '@/shared/ui/layout/loading-more';
 
@@ -95,14 +96,16 @@ export function EmployeeScreen({ onCreateEmployee, onEditEmployee }: EmployeeScr
           onScroll={(event) => handleScroll(event.nativeEvent.contentOffset.y)}
         >
           <View style={styles.searchRow}>
-            <TextInput
+            <AppInput
               value={draftQuery}
               onChangeText={setDraftQuery}
               onSubmitEditing={handleConfirmSearch}
               placeholder='Search employees'
-              placeholderTextColor={theme.colors.textHint}
+              strategy='text'
               returnKeyType='search'
-              style={styles.searchInput}
+              enterKeyHint='search'
+              variant='outlined'
+              inputStyle={styles.searchInput}
             />
 
             <Pressable

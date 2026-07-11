@@ -1,7 +1,7 @@
 import { PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import type { Employee, EmployeeStatus } from '@/features/employee/model/employee.types';
 import { navigationMetrics } from '@/navigation/navigation-metrics';
@@ -11,6 +11,7 @@ import { spacing } from '@/shared/theme/tokens/spacing';
 import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 import { AppButton } from '@/shared/ui/button';
+import { AppInput } from '@/shared/ui/input';
 
 import { employeeMockData } from '../../mock/employee-data';
 import { AppTheme } from '@/shared/theme';
@@ -64,34 +65,43 @@ export function EmployeeFormScreen({ employeeId, mode, onClose }: EmployeeFormSc
         >
           <FieldStack>
             <LabeledField label='Full name'>
-              <FormTextInput value={fullName} onChangeText={setFullName} placeholder='Employee full name' />
+              <AppInput
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder='Employee full name'
+                strategy='name'
+                variant='outlined'
+              />
             </LabeledField>
 
             <LabeledField label='Email'>
-              <FormTextInput
+              <AppInput
                 value={email}
                 onChangeText={setEmail}
                 placeholder='employee@email.com'
-                keyboardType='email-address'
-                autoCapitalize='none'
+                strategy='email'
+                variant='outlined'
               />
             </LabeledField>
 
             <LabeledField label='Phone number'>
-              <FormTextInput
+              <AppInput
                 value={phone}
                 onChangeText={setPhone}
                 placeholder='(090) 123-4567'
-                keyboardType='phone-pad'
+                strategy='phone'
+                variant='outlined'
               />
             </LabeledField>
 
             <LabeledField label='Note'>
-              <FormTextInput
+              <AppInput
                 multiline
                 value={note}
                 onChangeText={setNote}
                 placeholder='Short note about this employee'
+                strategy='text'
+                variant='outlined'
               />
             </LabeledField>
 
@@ -180,41 +190,6 @@ function LabeledField({ children, label }: LabeledFieldProps) {
   );
 }
 
-type FormTextInputProps = {
-  autoCapitalize?: 'none' | 'sentences' | 'words';
-  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
-  multiline?: boolean;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  value: string;
-};
-
-function FormTextInput({
-  autoCapitalize = 'sentences',
-  keyboardType = 'default',
-  multiline = false,
-  onChangeText,
-  placeholder,
-  value,
-}: FormTextInputProps) {
-  const theme = useAppTheme();
-  const styles = createStyles(theme);
-
-  return (
-    <TextInput
-      value={value}
-      onChangeText={onChangeText}
-      autoCapitalize={autoCapitalize}
-      keyboardType={keyboardType}
-      multiline={multiline}
-      placeholder={placeholder}
-      placeholderTextColor={theme.colors.textHint}
-      style={[styles.input, multiline ? styles.inputMultiline : null]}
-      textAlignVertical={multiline ? 'top' : 'center'}
-    />
-  );
-}
-
 function buildEmployeeFormSeed(employee: Employee): EmployeeFormSeed {
   return {
     email: employee.email ?? '',
@@ -261,27 +236,6 @@ function createStyles(theme: AppTheme) {
     fieldLabel: {
       ...typography.titleMedium,
       color: theme.colors.textSecondary,
-    },
-    input: {
-      height: 48,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 0,
-      borderRadius: radius.md,
-      borderCurve: 'continuous',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.textSecondary,
-      ...typography.bodyLarge,
-      lineHeight: 22,
-      includeFontPadding: false,
-    },
-    inputMultiline: {
-      minHeight: 96,
-      height: undefined,
-      paddingTop: spacing.sm,
-      paddingBottom: spacing.sm,
-      includeFontPadding: true,
     },
     statusSection: {
       gap: spacing.sm,

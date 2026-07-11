@@ -27,6 +27,7 @@ import { radius } from '@/shared/theme/tokens/radius';
 import { typography } from '@/shared/theme/tokens/typography';
 import { AppButton } from '@/shared/ui/button';
 import { AppChip } from '@/shared/ui/chip';
+import { AppInput, type AppInputStrategyName } from '@/shared/ui/input';
 
 import { ItemsEditDialog } from '../../features/receipts/components/items-edit-dialog';
 import type { Receipt, ReceiptItem } from '../../features/receipts/model/receipt.types';
@@ -84,7 +85,6 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
     { icon: Payment01Icon, label: 'Other', value: 'OTHER' as const },
   ];
   const receiptDateLabel = useMemo(() => formatReceiptDateDisplay(receipt.receiptDate), [receipt.receiptDate]);
-  const totalsCurrencyPrefix = receipt.currency;
 
   function updateReceipt(updater: (currentValue: Receipt) => Receipt) {
     setReceipt((currentValue) => recalculateReceipt(updater(currentValue)));
@@ -299,6 +299,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                       value={receipt.merchantName}
                       onChangeText={(value) => handleMerchantFieldChange('name', value)}
                       placeholder='Merchant name'
+                      strategy='text'
                     />
                   </View>
                 </View>
@@ -310,6 +311,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                       value={receipt.merchantPhone ?? ''}
                       onChangeText={(value) => handleMerchantFieldChange('phone', value)}
                       placeholder='Phone'
+                      strategy='phone'
                     />
                   </View>
 
@@ -326,6 +328,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                     onChangeText={(value) => handleMerchantFieldChange('address', value)}
                     placeholder='Address'
                     multiline
+                    strategy='text'
                   />
                 </View>
               </View>
@@ -430,6 +433,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                       value={receipt.paymentMethodName ?? ''}
                       onChangeText={(value) => handleCardFieldChange('paymentMethodName', value)}
                       placeholder='e.g. VISA'
+                      strategy='text'
                     />
                   </View>
 
@@ -439,7 +443,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                       value={receipt.paymentCardLast4 ?? ''}
                       onChangeText={(value) => handleCardFieldChange('lastFourDigits', value)}
                       placeholder='Last 4 digits'
-                      keyboardType='number-pad'
+                      strategy='card-last-four'
                     />
                   </View>
                 </View>
@@ -488,6 +492,7 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 }
                 placeholder='Write a note'
                 multiline
+                strategy='text'
               />
             </View>
           </SectionCard>
@@ -499,7 +504,6 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Tax'
                 value={receipt.taxAmount}
                 currencyCode={receipt.currency}
-                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('tax', value)}
                 onEdit={() => handleEnableTotalEdit('tax')}
               />
@@ -508,7 +512,6 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Tips'
                 value={receipt.tipAmount}
                 currencyCode={receipt.currency}
-                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('tips', value)}
                 onEdit={() => handleEnableTotalEdit('tips')}
               />
@@ -517,7 +520,6 @@ export function ReceiptPreviewScreen({ onCancel }: ReceiptPreviewScreenProps) {
                 label='Discount'
                 value={receipt.discountAmount}
                 currencyCode={receipt.currency}
-                currencyPrefix={totalsCurrencyPrefix}
                 onChangeText={(value) => handleTotalFieldChange('discount', value)}
                 onEdit={() => handleEnableTotalEdit('discount')}
                 isNegative
@@ -684,43 +686,37 @@ const DisplayField = memo(function DisplayFieldComponent({ label, value }: Displ
 });
 
 type ReceiptInputProps = {
-  keyboardType?: 'decimal-pad' | 'default' | 'number-pad';
   multiline?: boolean;
   onChangeText: (value: string) => void;
   placeholder: string;
+  strategy?: AppInputStrategyName;
   value: string;
 };
 
 const ReceiptInput = memo(function ReceiptInputComponent({
-  keyboardType = 'default',
   multiline = false,
   onChangeText,
   placeholder,
+  strategy = 'text',
   value,
 }: ReceiptInputProps) {
-  const theme = useAppTheme();
-  const styles = createStyles(theme, 0, 0);
+  const styles = createStyles(useAppTheme(), 0, 0);
 
   return (
-    <TextInput
+    <AppInput
       value={value}
       onChangeText={onChangeText}
-      keyboardType={keyboardType}
       placeholder={placeholder}
-      placeholderTextColor={theme.colors.textHint}
       multiline={multiline}
-      textAlignVertical={multiline ? 'top' : 'center'}
-      style={[
-        styles.receiptInput,
-        multiline ? styles.receiptInputMultiline : styles.receiptInputSingleLine,
-      ]}
+      strategy={strategy}
+      variant='soft'
+      inputStyle={[styles.receiptInput, multiline ? styles.receiptInputMultiline : styles.receiptInputSingleLine]}
     />
   );
 });
 
 type EditableTotalRowProps = {
   currencyCode: Receipt['currency'];
-  currencyPrefix: string;
   isEditing: boolean;
   isNegative?: boolean;
   label: string;
@@ -731,7 +727,6 @@ type EditableTotalRowProps = {
 
 const EditableTotalRow = memo(function EditableTotalRowComponent({
   currencyCode,
-  currencyPrefix,
   isEditing,
   isNegative = false,
   label,
@@ -751,7 +746,6 @@ const EditableTotalRow = memo(function EditableTotalRowComponent({
 
       {isEditing ? (
         <View style={styles.totalInputWrapper}>
-          <Text style={styles.totalInputPrefix}>{isNegative ? `-${currencyPrefix}` : currencyPrefix}</Text>
           <TextInput
             value={value}
             onChangeText={onChangeText}
@@ -1118,21 +1112,14 @@ function createStyles(theme: AppTheme, topInset: number, bottomInset: number) {
       opacity: 0.84,
     },
     totalInputWrapper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      minWidth: 126,
-      maxWidth: 148,
+      minWidth: 112,
+      maxWidth: 132,
       paddingHorizontal: spacing.sm,
       borderRadius: radius.md,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surfaceAlt,
     },
-    totalInputPrefix: {
-      ...typography.titleMedium,
-      color: theme.colors.textSecondary,
-    },
     totalInput: {
-      flex: 1,
       height: 40,
       paddingVertical: 0,
       color: theme.colors.textSecondary,

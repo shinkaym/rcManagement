@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
 import {
@@ -14,6 +14,7 @@ import { AppTheme } from '@/shared/theme';
 import { radius } from '@/shared/theme/tokens/radius';
 import { spacing } from '@/shared/theme/tokens/spacing';
 import { typography } from '@/shared/theme/tokens/typography';
+import { AppInput } from '@/shared/ui/input';
 import { isValidHexColor, normalizeHexColor } from '@/shared/utils/color';
 
 import { ColorOptionButton } from './color-option-button';
@@ -148,12 +149,13 @@ export const CategoryEditorSheet = memo(function CategoryEditorSheetComponent({
           >
             <Text style={styles.sheetTitle}>{mode === 'edit' ? 'Edit Category' : 'Create Category'}</Text>
 
-            <TextInput
+            <AppInput
               placeholder='Input category name'
-              placeholderTextColor={theme.colors.textHint}
-              style={styles.nameInput}
               value={draftName}
               onChangeText={setDraftName}
+              strategy='text'
+              variant='outlined'
+              inputStyle={styles.nameInput}
             />
 
             <View style={styles.colorGroup}>
